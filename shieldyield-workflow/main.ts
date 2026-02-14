@@ -1,7 +1,24 @@
 import { CronCapability, handler, Runner, type Runtime } from "@chainlink/cre-sdk";
 
+type Addresses = {
+  mockUSDC: string;
+  faucet: string;
+  riskRegistry: string;
+  shieldVault: string;
+  shieldBridge: string;
+  aaveAdapter: string;
+  compoundAdapter: string;
+  morphoAdapter: string;
+  yieldMaxAdapter: string;
+}
+
+type EvmConfig = {
+  chainName: string;
+  addresses: Addresses[];
+}
+
 type Config = {
-  schedule: string;
+  evms: EvmConfig[];
 };
 
 const onCronTrigger = (runtime: Runtime<Config>): string => {
@@ -15,8 +32,8 @@ const initWorkflow = (config: Config) => {
   return [
     handler(
       cron.trigger(
-        { schedule: config.schedule }
-      ), 
+        {}
+      ),
       onCronTrigger
     ),
   ];
