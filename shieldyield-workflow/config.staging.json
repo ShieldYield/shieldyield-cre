@@ -1,0 +1,38 @@
+{
+  "evms": [
+    {
+      "chainName": "arbitrum-testnet-sepolia",
+      "address": [
+        {
+          "mockUSDC": "${ARBITRUM_SEPOLIA_MOCK_USDC}",
+          "faucet": "${ARBITRUM_SEPOLIA_FAUCET}",
+          "riskRegistry": "${ARBITRUM_SEPOLIA_RISK_REGISTRY}",
+          "shieldVault": "${ARBITRUM_SEPOLIA_SHIELD_VAULT}",
+          "shieldBridge": "${ARBITRUM_SEPOLIA_SHIELD_BRIDGE}",
+          "aaveAdapter": "${ARBITRUM_SEPOLIA_AAVE_ADAPTER}",
+          "compoundAdapter": "${ARBITRUM_SEPOLIA_COMPOUND_ADAPTER}",
+          "morphoAdapter": "${ARBITRUM_SEPOLIA_MORPHO_ADAPTER}",
+          "yieldMaxAdapter": "${ARBITRUM_SEPOLIA_YIELD_MAX_ADAPTER}"
+        }
+      ],
+      "gasLimit": 500000
+    },
+    {
+      "chainName": "base-testnet-sepolia",
+      "address": [
+        {
+          "mockUSDC": "${BASE_SEPOLIA_MOCK_USDC}",
+          "faucet": "${BASE_SEPOLIA_FAUCET}",
+          "riskRegistry": "${BASE_SEPOLIA_RISK_REGISTRY}",
+          "shieldVault": "${BASE_SEPOLIA_SHIELD_VAULT}",
+          "shieldBridge": "${BASE_SEPOLIA_SHIELD_BRIDGE}",
+          "aaveAdapter": "${BASE_SEPOLIA_AAVE_ADAPTER}",
+          "compoundAdapter": "${BASE_SEPOLIA_COMPOUND_ADAPTER}",
+          "morphoAdapter": "${BASE_SEPOLIA_MORPHO_ADAPTER}",
+          "yieldMaxAdapter": "${BASE_SEPOLIA_YIELD_MAX_ADAPTER}",
+        }
+      ],
+      "gasLimit": 500000
+    }
+  ]
+}
