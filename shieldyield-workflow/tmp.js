@@ -16156,6 +16156,24 @@ init_encodeFunctionData();
 init_toBytes();
 init_toHex();
 init_keccak256();
+function createEvmClient(chainName) {
+  const network248 = getNetwork({
+    chainFamily: "evm",
+    chainSelectorName: chainName,
+    isTestnet: true
+  });
+  if (!network248) {
+    throw new Error(`Network not found: ${chainName}`);
+  }
+  return new ClientCapability(network248.chainSelector.selector);
+}
+var RISK_SCORE_UPDATED_SIG = keccak256(toBytes("RiskScoreUpdated(address,uint8,uint8,uint8)"));
+var THREAT_LEVEL = {
+  SAFE: 0,
+  WATCH: 1,
+  WARNING: 2,
+  CRITICAL: 3
+};
 var RiskRegistry = [
   {
     type: "constructor",
@@ -19486,7 +19504,7 @@ var YieldMaxAdapter = [
     ]
   }
 ];
-function createEvmClient(chainName) {
+function createEvmClient2(chainName) {
   const network248 = getNetwork({
     chainFamily: "evm",
     chainSelectorName: chainName,
@@ -19560,7 +19578,7 @@ function readAdapterSnapshot(runtime2, evmClient, adapterName, adapterAddress, a
   };
 }
 function readAllAdapters(runtime2, chainName, addresses) {
-  const evmClient = createEvmClient(chainName);
+  const evmClient = createEvmClient2(chainName);
   const adapterConfigs = [
     { name: "AaveAdapter", address: addresses.aaveAdapter, abi: AaveAdapter },
     { name: "CompoundAdapter", address: addresses.compoundAdapter, abi: CompoundAdapter },
@@ -19851,184 +19869,6 @@ function getHighestSeverity(anomalies) {
   }
   return severityOrder[highest];
 }
-var BASIS_POINTS = 1e4;
-function calculateOptimalAllocations(pools, riskInfo, config) {
-  const activePools = pools.filter((p) => p.isActive);
-  if (activePools.length === 0) {
-    return [];
-  }
-  const riskMap = new Map;
-  for (const r of riskInfo) {
-    riskMap.set(r.address.toLowerCase(), r);
-  }
-  const poolScores = [];
-  for (const pool of activePools) {
-    const risk = riskMap.get(pool.adapter.toLowerCase());
-    if (risk && (risk.threatLevel === "WARNING" || risk.threatLevel === "CRITICAL")) {
-      poolScores.push({ adapter: pool.adapter, score: 0 });
-      continue;
-    }
-    const riskScore = risk?.riskScore ?? 0;
-    const inverseRisk = Math.max(1, 100 - riskScore);
-    const apyBps = risk ? Number(risk.apy) : 0;
-    const apyBonus = Math.min(apyBps / 100, 20);
-    const desirability = inverseRisk + apyBonus;
-    poolScores.push({ adapter: pool.adapter, score: desirability });
-  }
-  const totalScore = poolScores.reduce((sum, p) => sum + p.score, 0);
-  if (totalScore === 0) {
-    return poolScores.map((p) => ({ adapter: p.adapter, newWeight: 0 }));
-  }
-  const maxAlloc = config.maxSingleAdapterAllocation;
-  let results = poolScores.map((p) => ({
-    adapter: p.adapter,
-    newWeight: Math.round(p.score / totalScore * BASIS_POINTS)
-  }));
-  let capped = true;
-  while (capped) {
-    capped = false;
-    let excess = 0;
-    let uncappedCount = 0;
-    for (const r of results) {
-      if (r.newWeight > maxAlloc) {
-        excess += r.newWeight - maxAlloc;
-        r.newWeight = maxAlloc;
-        capped = true;
-      } else if (r.newWeight > 0) {
-        uncappedCount++;
-      }
-    }
-    if (excess > 0 && uncappedCount > 0) {
-      const perPool = Math.floor(excess / uncappedCount);
-      for (const r of results) {
-        if (r.newWeight > 0 && r.newWeight < maxAlloc) {
-          r.newWeight += perPool;
-        }
-      }
-    }
-  }
-  const totalWeight = results.reduce((sum, r) => sum + r.newWeight, 0);
-  if (totalWeight > 0 && totalWeight !== BASIS_POINTS) {
-    const diff = BASIS_POINTS - totalWeight;
-    const largest = results.reduce((max, r) => r.newWeight > max.newWeight ? r : max);
-    largest.newWeight += diff;
-  }
-  return results;
-}
-function shouldRebalance(currentPools, optimal, thresholdBps = 500) {
-  for (const pool of currentPools) {
-    const optimalEntry = optimal.find((o) => o.adapter.toLowerCase() === pool.adapter.toLowerCase());
-    if (!optimalEntry)
-      continue;
-    const currentWeight = Number(pool.targetWeight);
-    const diff = Math.abs(currentWeight - optimalEntry.newWeight);
-    if (diff >= thresholdBps) {
-      return true;
-    }
-  }
-  return false;
-}
-function createEvmClient2(chainName) {
-  const network248 = getNetwork({
-    chainFamily: "evm",
-    chainSelectorName: chainName,
-    isTestnet: true
-  });
-  if (!network248) {
-    throw new Error(`Network not found: ${chainName}`);
-  }
-  return new ClientCapability(network248.chainSelector.selector);
-}
-function executeWarningProtocol(runtime2, chainName, shieldVaultAddress, adapterAddress, reason, config) {
-  const evmClient = createEvmClient2(chainName);
-  const actions = [];
-  try {
-    runtime2.log(`ShieldExecutor: WARNING — partial withdraw ${config.warningWithdrawPercent / 100}% from ${adapterAddress}`);
-    const txData = encodeFunctionData({
-      abi: ShieldVault,
-      functionName: "partialWithdraw",
-      args: [
-        adapterAddress,
-        BigInt(config.warningWithdrawPercent),
-        reason
-      ]
-    });
-    evmClient.writeReport(runtime2, {
-      receiver: shieldVaultAddress,
-      report: new Report({ rawReport: txData })
-    }).result();
-    actions.push({
-      type: "PARTIAL_WITHDRAW",
-      adapter: adapterAddress,
-      reason,
-      threatLevel: "WARNING"
-    });
-    return {
-      actions,
-      success: true,
-      message: `Partial withdraw (${config.warningWithdrawPercent / 100}%) executed from ${adapterAddress}`
-    };
-  } catch (err) {
-    runtime2.log(`ShieldExecutor: WARNING action failed — ${err}`);
-    return {
-      actions,
-      success: false,
-      message: `WARNING action failed: ${err}`
-    };
-  }
-}
-function executeCriticalProtocol(runtime2, chainName, shieldVaultAddress, adapterAddress, reason) {
-  const evmClient = createEvmClient2(chainName);
-  const actions = [];
-  try {
-    runtime2.log(`ShieldExecutor: CRITICAL — emergency withdraw ALL from ${adapterAddress}`);
-    const txData = encodeFunctionData({
-      abi: ShieldVault,
-      functionName: "emergencyWithdraw",
-      args: [adapterAddress, reason]
-    });
-    evmClient.writeReport(runtime2, {
-      receiver: shieldVaultAddress,
-      report: new Report({ rawReport: txData })
-    }).result();
-    actions.push({
-      type: "EMERGENCY_WITHDRAW",
-      adapter: adapterAddress,
-      reason,
-      threatLevel: "CRITICAL"
-    });
-    return {
-      actions,
-      success: true,
-      message: `Emergency withdraw executed from ${adapterAddress}. Funds moved to safe haven.`
-    };
-  } catch (err) {
-    runtime2.log(`ShieldExecutor: CRITICAL action failed — ${err}`);
-    return {
-      actions,
-      success: false,
-      message: `CRITICAL action failed: ${err}`
-    };
-  }
-}
-function createEvmClient3(chainName) {
-  const network248 = getNetwork({
-    chainFamily: "evm",
-    chainSelectorName: chainName,
-    isTestnet: true
-  });
-  if (!network248) {
-    throw new Error(`Network not found: ${chainName}`);
-  }
-  return new ClientCapability(network248.chainSelector.selector);
-}
-var RISK_SCORE_UPDATED_SIG = keccak256(toBytes("RiskScoreUpdated(address,uint8,uint8,uint8)"));
-var THREAT_LEVEL = {
-  SAFE: 0,
-  WATCH: 1,
-  WARNING: 2,
-  CRITICAL: 3
-};
 var onCronTrigger = (runtime2) => {
   runtime2.log("=".repeat(60));
   runtime2.log("\uD83D\uDEE1️  WORKFLOW 1+2: SENTINEL SCAN + THREAT ASSESSMENT");
@@ -20039,7 +19879,7 @@ var onCronTrigger = (runtime2) => {
     runtime2.log(`
 Monitoring chain: ${evm.chainName}`);
     const addresses = evm.addresses[0];
-    const evmClient = createEvmClient3(evm.chainName);
+    const evmClient = createEvmClient(evm.chainName);
     runtime2.log("Reading on-chain adapter data...");
     const adapters = readAllAdapters(runtime2, evm.chainName, {
       aaveAdapter: addresses.aaveAdapter,
@@ -20140,6 +19980,83 @@ Monitoring chain: ${evm.chainName}`);
     results: allResults
   });
 };
+var BASIS_POINTS = 1e4;
+function calculateOptimalAllocations(pools, riskInfo, config) {
+  const activePools = pools.filter((p) => p.isActive);
+  if (activePools.length === 0) {
+    return [];
+  }
+  const riskMap = new Map;
+  for (const r of riskInfo) {
+    riskMap.set(r.address.toLowerCase(), r);
+  }
+  const poolScores = [];
+  for (const pool of activePools) {
+    const risk = riskMap.get(pool.adapter.toLowerCase());
+    if (risk && (risk.threatLevel === "WARNING" || risk.threatLevel === "CRITICAL")) {
+      poolScores.push({ adapter: pool.adapter, score: 0 });
+      continue;
+    }
+    const riskScore = risk?.riskScore ?? 0;
+    const inverseRisk = Math.max(1, 100 - riskScore);
+    const apyBps = risk ? Number(risk.apy) : 0;
+    const apyBonus = Math.min(apyBps / 100, 20);
+    const desirability = inverseRisk + apyBonus;
+    poolScores.push({ adapter: pool.adapter, score: desirability });
+  }
+  const totalScore = poolScores.reduce((sum, p) => sum + p.score, 0);
+  if (totalScore === 0) {
+    return poolScores.map((p) => ({ adapter: p.adapter, newWeight: 0 }));
+  }
+  const maxAlloc = config.maxSingleAdapterAllocation;
+  let results = poolScores.map((p) => ({
+    adapter: p.adapter,
+    newWeight: Math.round(p.score / totalScore * BASIS_POINTS)
+  }));
+  let capped = true;
+  while (capped) {
+    capped = false;
+    let excess = 0;
+    let uncappedCount = 0;
+    for (const r of results) {
+      if (r.newWeight > maxAlloc) {
+        excess += r.newWeight - maxAlloc;
+        r.newWeight = maxAlloc;
+        capped = true;
+      } else if (r.newWeight > 0) {
+        uncappedCount++;
+      }
+    }
+    if (excess > 0 && uncappedCount > 0) {
+      const perPool = Math.floor(excess / uncappedCount);
+      for (const r of results) {
+        if (r.newWeight > 0 && r.newWeight < maxAlloc) {
+          r.newWeight += perPool;
+        }
+      }
+    }
+  }
+  const totalWeight = results.reduce((sum, r) => sum + r.newWeight, 0);
+  if (totalWeight > 0 && totalWeight !== BASIS_POINTS) {
+    const diff = BASIS_POINTS - totalWeight;
+    const largest = results.reduce((max, r) => r.newWeight > max.newWeight ? r : max);
+    largest.newWeight += diff;
+  }
+  return results;
+}
+function shouldRebalance(currentPools, optimal, thresholdBps = 500) {
+  for (const pool of currentPools) {
+    const optimalEntry = optimal.find((o) => o.adapter.toLowerCase() === pool.adapter.toLowerCase());
+    if (!optimalEntry)
+      continue;
+    const currentWeight = Number(pool.targetWeight);
+    const diff = Math.abs(currentWeight - optimalEntry.newWeight);
+    if (diff >= thresholdBps) {
+      return true;
+    }
+  }
+  return false;
+}
 var onRebalanceTrigger = (runtime2, triggerEvent) => {
   runtime2.log("=".repeat(60));
   runtime2.log("⚖️  WORKFLOW 3: AI REBALANCER");
@@ -20147,7 +20064,7 @@ var onRebalanceTrigger = (runtime2, triggerEvent) => {
   runtime2.log("=".repeat(60));
   const evm = runtime2.config.evms[0];
   const addresses = evm.addresses[0];
-  const evmClient = createEvmClient3(evm.chainName);
+  const evmClient = createEvmClient(evm.chainName);
   let triggerThreatLevel = THREAT_LEVEL.SAFE;
   try {
     if (triggerEvent?.data) {
@@ -20277,6 +20194,89 @@ var onRebalanceTrigger = (runtime2, triggerEvent) => {
     });
   }
 };
+function createEvmClient3(chainName) {
+  const network248 = getNetwork({
+    chainFamily: "evm",
+    chainSelectorName: chainName,
+    isTestnet: true
+  });
+  if (!network248) {
+    throw new Error(`Network not found: ${chainName}`);
+  }
+  return new ClientCapability(network248.chainSelector.selector);
+}
+function executeWarningProtocol(runtime2, chainName, shieldVaultAddress, adapterAddress, reason, config) {
+  const evmClient = createEvmClient3(chainName);
+  const actions = [];
+  try {
+    runtime2.log(`ShieldExecutor: WARNING — partial withdraw ${config.warningWithdrawPercent / 100}% from ${adapterAddress}`);
+    const txData = encodeFunctionData({
+      abi: ShieldVault,
+      functionName: "partialWithdraw",
+      args: [
+        adapterAddress,
+        BigInt(config.warningWithdrawPercent),
+        reason
+      ]
+    });
+    evmClient.writeReport(runtime2, {
+      receiver: shieldVaultAddress,
+      report: new Report({ rawReport: txData })
+    }).result();
+    actions.push({
+      type: "PARTIAL_WITHDRAW",
+      adapter: adapterAddress,
+      reason,
+      threatLevel: "WARNING"
+    });
+    return {
+      actions,
+      success: true,
+      message: `Partial withdraw (${config.warningWithdrawPercent / 100}%) executed from ${adapterAddress}`
+    };
+  } catch (err) {
+    runtime2.log(`ShieldExecutor: WARNING action failed — ${err}`);
+    return {
+      actions,
+      success: false,
+      message: `WARNING action failed: ${err}`
+    };
+  }
+}
+function executeCriticalProtocol(runtime2, chainName, shieldVaultAddress, adapterAddress, reason) {
+  const evmClient = createEvmClient3(chainName);
+  const actions = [];
+  try {
+    runtime2.log(`ShieldExecutor: CRITICAL — emergency withdraw ALL from ${adapterAddress}`);
+    const txData = encodeFunctionData({
+      abi: ShieldVault,
+      functionName: "emergencyWithdraw",
+      args: [adapterAddress, reason]
+    });
+    evmClient.writeReport(runtime2, {
+      receiver: shieldVaultAddress,
+      report: new Report({ rawReport: txData })
+    }).result();
+    actions.push({
+      type: "EMERGENCY_WITHDRAW",
+      adapter: adapterAddress,
+      reason,
+      threatLevel: "CRITICAL"
+    });
+    return {
+      actions,
+      success: true,
+      message: `Emergency withdraw executed from ${adapterAddress}. Funds moved to safe haven.`
+    };
+  } catch (err) {
+    runtime2.log(`ShieldExecutor: CRITICAL action failed — ${err}`);
+    return {
+      actions,
+      success: false,
+      message: `CRITICAL action failed: ${err}`
+    };
+  }
+}
 var onShieldTrigger = (runtime2, triggerEvent) => {
   runtime2.log("=".repeat(60));
   runtime2.log("\uD83D\uDEE1️  WORKFLOW 4: SHIELD EXECUTE (EMERGENCY PROTOCOL)");
