@@ -1,17 +1,15 @@
 import {
     EVMClient,
     getNetwork,
-    encodeCallMsg,
     type Runtime,
+    Report,
 } from "@chainlink/cre-sdk";
 import {
     type Address,
     encodeFunctionData,
-    keccak256,
-    toBytes,
 } from "viem";
 
-import { ShieldVault, ShieldBridge } from "../../contracts/abi";
+import { ShieldVault } from "../../contracts/abi";
 import type { ShieldConfig } from "../monitors/types";
 
 // ========================================
@@ -86,14 +84,11 @@ export function executeWarningProtocol(
             ],
         });
 
+        // CRE writeReport: pass encoded calldata via Report
         evmClient
             .writeReport(runtime, {
                 receiver: shieldVaultAddress,
-                $report: true,
-                report: {
-                    id: keccak256(toBytes("shieldyield-warning")),
-                    data: txData,
-                },
+                report: new Report({ rawReport: txData }),
             })
             .result();
 
@@ -151,14 +146,11 @@ export function executeCriticalProtocol(
             args: [adapterAddress as Address, reason],
         });
 
+        // CRE writeReport: pass encoded calldata via Report
         evmClient
             .writeReport(runtime, {
                 receiver: shieldVaultAddress,
-                $report: true,
-                report: {
-                    id: keccak256(toBytes("shieldyield-critical")),
-                    data: txData,
-                },
+                report: new Report({ rawReport: txData }),
             })
             .result();
 

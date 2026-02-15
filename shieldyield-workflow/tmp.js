@@ -19955,11 +19955,7 @@ function executeWarningProtocol(runtime2, chainName, shieldVaultAddress, adapter
     });
     evmClient.writeReport(runtime2, {
       receiver: shieldVaultAddress,
-      $report: true,
-      report: {
-        id: keccak256(toBytes("shieldyield-warning")),
-        data: txData
-      }
+      report: new Report({ rawReport: txData })
     }).result();
     actions.push({
       type: "PARTIAL_WITHDRAW",
@@ -19993,11 +19989,7 @@ function executeCriticalProtocol(runtime2, chainName, shieldVaultAddress, adapte
     });
     evmClient.writeReport(runtime2, {
       receiver: shieldVaultAddress,
-      $report: true,
-      report: {
-        id: keccak256(toBytes("shieldyield-critical")),
-        data: txData
-      }
+      report: new Report({ rawReport: txData })
     }).result();
     actions.push({
       type: "EMERGENCY_WITHDRAW",
@@ -20056,13 +20048,20 @@ Monitoring chain: ${evm.chainName}`);
       yieldMaxAdapter: addresses.yieldMaxAdapter
     });
     runtime2.log("Fetching off-chain signals...");
-    const apis = runtime2.config.offchainApis;
-    const goPlusUrl = `https://api.gopluslabs.io/api/v1/token_security/${apis.goPlusChainId}?contract_addresses=${apis.goPlusTokenAddress}`;
+    const apisConfig = runtime2.config.offchainApis;
+    const primaryAdapter = apisConfig.adapters[apisConfig.primaryProtocol];
+    if (!primaryAdapter) {
+      runtime2.log(`ERROR: Primary protocol '${apisConfig.primaryProtocol}' not found in adapter config`);
+      return JSON.stringify({ status: "error", error: "Invalid primaryProtocol config" });
+    }
+    const goPlusUrl = `https://api.gopluslabs.io/api/v1/token_security/${apisConfig.goPlusChainId}?contract_addresses=${primaryAdapter.goPlusTokenAddress}`;
+    const teamWalletUrl = `https://api.arbiscan.io/api?module=account&action=balance&address=${primaryAdapter.teamWallet}&tag=latest&apikey=YourApiKeyToken`;
+    runtime2.log(`Using primary protocol: ${apisConfig.primaryProtocol}`);
     const offchain = fetchAllOffchainSignals(runtime2, {
-      defiLlamaSlug: apis.defiLlamaSlug,
-      githubUrl: apis.github,
+      defiLlamaSlug: primaryAdapter.defiLlamaSlug,
+      githubUrl: primaryAdapter.github,
       goPlusUrl,
-      teamWalletUrl: apis.teamWallet
+      teamWalletUrl
     });
     runtime2.log("Computing risk scores...");
     const riskScores = computeAllRiskScores(adapters, [], offchain);
@@ -20110,11 +20109,7 @@ Monitoring chain: ${evm.chainName}`);
         });
         evmClient.writeReport(runtime2, {
           receiver: addresses.riskRegistry,
-          $report: true,
-          report: {
-            id: keccak256(toBytes("shieldyield-risk-update")),
-            data: txData
-          }
+          report: new Report({ rawReport: txData })
         }).result();
         runtime2.log("Risk scores written on-chain successfully");
       } catch (err) {
@@ -20249,11 +20244,7 @@ var onRebalanceTrigger = (runtime2, triggerEvent) => {
         });
         evmClient.writeReport(runtime2, {
           receiver: addresses.shieldVault,
-          $report: true,
-          report: {
-            id: keccak256(toBytes(`shieldyield-weight-${alloc2.adapter}`)),
-            data: updateData
-          }
+          report: new Report({ rawReport: updateData })
         }).result();
       }
       const rebalanceData = encodeFunctionData({
@@ -20262,11 +20253,7 @@ var onRebalanceTrigger = (runtime2, triggerEvent) => {
       });
       evmClient.writeReport(runtime2, {
         receiver: addresses.shieldVault,
-        $report: true,
-        report: {
-          id: keccak256(toBytes("shieldyield-rebalance")),
-          data: rebalanceData
-        }
+        report: new Report({ rawReport: rebalanceData })
       }).result();
       runtime2.log("Rebalance executed successfully");
       return JSON.stringify({

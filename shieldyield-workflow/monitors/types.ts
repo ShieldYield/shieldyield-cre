@@ -76,6 +76,28 @@ export interface MonitoringResult {
 }
 
 /**
+ * Per-adapter off-chain API configuration
+ */
+export interface AdapterApiConfig {
+    defiLlamaSlug: string;
+    github: string;
+    goPlusTokenAddress: string;
+    teamWallet: string;
+}
+
+/**
+ * Off-chain APIs configuration with per-adapter support
+ */
+export interface OffchainApisConfig {
+    /** Which adapter key to use as primary for off-chain fetching (HTTP limit: 5) */
+    primaryProtocol: string;
+    /** GoPlus chain ID (shared across adapters on same chain) */
+    goPlusChainId: string;
+    /** Per-adapter API config */
+    adapters: Record<string, AdapterApiConfig>;
+}
+
+/**
  * Shield configuration for rebalancing and emergency actions
  */
 export interface ShieldConfig {

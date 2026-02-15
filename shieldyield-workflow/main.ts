@@ -8,6 +8,7 @@ import {
   handler,
   Runner,
   type Runtime,
+  Report,
 } from "@chainlink/cre-sdk";
 import {
   type Address,
@@ -28,7 +29,7 @@ import {
   detectAllAnomalies,
   getHighestSeverity,
 } from "./monitors";
-import type { ShieldConfig } from "./monitors/types";
+import type { ShieldConfig, AdapterApiConfig, OffchainApisConfig } from "./monitors/types";
 import type { Anomaly } from "./monitors/anomaly-detector";
 
 import {
@@ -66,18 +67,10 @@ type EvmConfig = {
   addresses: Addresses[];
 };
 
-type OffchainApis = {
-  defiLlamaSlug: string;
-  github: string;
-  goPlusChainId: string;
-  goPlusTokenAddress: string;
-  teamWallet: string;
-};
-
 type Config = {
   schedule: string;
   evms: EvmConfig[];
-  offchainApis: OffchainApis;
+  offchainApis: OffchainApisConfig;
   shieldConfig: ShieldConfig;
 };
 
@@ -141,14 +134,21 @@ const onCronTrigger = (runtime: Runtime<Config>): string => {
 
     // ---- STEP 2: Fetch Off-Chain Signals ----
     runtime.log("Fetching off-chain signals...");
-    const apis = runtime.config.offchainApis;
-    const goPlusUrl = `https://api.gopluslabs.io/api/v1/token_security/${apis.goPlusChainId}?contract_addresses=${apis.goPlusTokenAddress}`;
+    const apisConfig = runtime.config.offchainApis;
+    const primaryAdapter = apisConfig.adapters[apisConfig.primaryProtocol];
+    if (!primaryAdapter) {
+      runtime.log(`ERROR: Primary protocol '${apisConfig.primaryProtocol}' not found in adapter config`);
+      return JSON.stringify({ status: "error", error: "Invalid primaryProtocol config" });
+    }
+    const goPlusUrl = `https://api.gopluslabs.io/api/v1/token_security/${apisConfig.goPlusChainId}?contract_addresses=${primaryAdapter.goPlusTokenAddress}`;
+    const teamWalletUrl = `https://api.arbiscan.io/api?module=account&action=balance&address=${primaryAdapter.teamWallet}&tag=latest&apikey=YourApiKeyToken`;
 
+    runtime.log(`Using primary protocol: ${apisConfig.primaryProtocol}`);
     const offchain = fetchAllOffchainSignals(runtime, {
-      defiLlamaSlug: apis.defiLlamaSlug,
-      githubUrl: apis.github,
+      defiLlamaSlug: primaryAdapter.defiLlamaSlug,
+      githubUrl: primaryAdapter.github,
       goPlusUrl,
-      teamWalletUrl: apis.teamWallet,
+      teamWalletUrl,
     });
 
     // ---- STEP 3: Compute Risk Scores ----
@@ -217,14 +217,11 @@ const onCronTrigger = (runtime: Runtime<Config>): string => {
           args: [protocols, scores, reasons],
         });
 
+        // CRE writeReport: pass encoded calldata via Report with rawReport
         evmClient
           .writeReport(runtime, {
             receiver: addresses.riskRegistry,
-            $report: true,
-            report: {
-              id: keccak256(toBytes("shieldyield-risk-update")),
-              data: txData,
-            },
+            report: new Report({ rawReport: txData }),
           })
           .result();
 
@@ -276,7 +273,7 @@ const onRebalanceTrigger = (runtime: Runtime<Config>, triggerEvent: any): string
 
   // Decode the trigger event to get threat level
   // RiskScoreUpdated(address indexed protocol, uint8 oldScore, uint8 newScore, uint8 threatLevel)
-  let triggerThreatLevel = THREAT_LEVEL.SAFE;
+  let triggerThreatLevel: number = THREAT_LEVEL.SAFE;
   try {
     if (triggerEvent?.data) {
       const decoded = decodeAbiParameters(
@@ -405,11 +402,7 @@ const onRebalanceTrigger = (runtime: Runtime<Config>, triggerEvent: any): string
         evmClient
           .writeReport(runtime, {
             receiver: addresses.shieldVault,
-            $report: true,
-            report: {
-              id: keccak256(toBytes(`shieldyield-weight-${alloc.adapter}`)),
-              data: updateData,
-            },
+            report: new Report({ rawReport: updateData }),
           })
           .result();
       }
@@ -423,11 +416,7 @@ const onRebalanceTrigger = (runtime: Runtime<Config>, triggerEvent: any): string
       evmClient
         .writeReport(runtime, {
           receiver: addresses.shieldVault,
-          $report: true,
-          report: {
-            id: keccak256(toBytes("shieldyield-rebalance")),
-            data: rebalanceData,
-          },
+          report: new Report({ rawReport: rebalanceData }),
         })
         .result();
 

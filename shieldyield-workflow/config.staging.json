@@ -19,11 +19,34 @@
     }
   ],
   "offchainApis": {
-    "defiLlamaSlug": "aave",
-    "github": "https://api.github.com/repos/aave/aave-v3-core",
+    "primaryProtocol": "AaveAdapter",
     "goPlusChainId": "42161",
-    "goPlusTokenAddress": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-    "teamWallet": "https://api.arbiscan.io/api?module=account&action=balance&address=0xB81961aA49d7E834404e299e688B3Dc09a5EFe5a&tag=latest&apikey=YourApiKeyToken"
+    "adapters": {
+      "AaveAdapter": {
+        "defiLlamaSlug": "aave",
+        "github": "https://api.github.com/repos/aave/aave-v3-core",
+        "goPlusTokenAddress": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+        "teamWallet": "0xB81961aA49d7E834404e299e688B3Dc09a5EFe5a"
+      },
+      "CompoundAdapter": {
+        "defiLlamaSlug": "compound-v3",
+        "github": "https://api.github.com/repos/compound-finance/comet",
+        "goPlusTokenAddress": "0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA",
+        "teamWallet": "0xcc547a2B0f18b34095623809977D54cfe306BEBF"
+      },
+      "MorphoAdapter": {
+        "defiLlamaSlug": "morpho",
+        "github": "https://api.github.com/repos/morpho-org/morpho-blue",
+        "goPlusTokenAddress": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+        "teamWallet": "0x5f8A64Bc67f23b8d5d02c7CFE187AD42D59f1D59"
+      },
+      "YieldMaxAdapter": {
+        "defiLlamaSlug": "yearn-finance",
+        "github": "https://api.github.com/repos/yearn/yearn-vaults-v3",
+        "goPlusTokenAddress": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+        "teamWallet": "0x5EbD6F3DA76C2B9C9d6aAC89DA08c388EaB2B3cb"
+      }
+    }
   },
   "shieldConfig": {
     "warningWithdrawPercent": 3000,
