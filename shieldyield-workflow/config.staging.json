@@ -1,36 +1,34 @@
 {
+  "schedule": "*/30 * * * * *",
   "evms": [
     {
-      "chainName": "arbitrum-testnet-sepolia",
+      "chainName": "ethereum-testnet-sepolia-arbitrum-1",
       "addresses": [
         {
-          "mockUSDC": "${ARBITRUM_SEPOLIA_MOCK_USDC}",
-          "faucet": "${ARBITRUM_SEPOLIA_FAUCET}",
-          "riskRegistry": "${ARBITRUM_SEPOLIA_RISK_REGISTRY}",
-          "shieldVault": "${ARBITRUM_SEPOLIA_SHIELD_VAULT}",
-          "shieldBridge": "${ARBITRUM_SEPOLIA_SHIELD_BRIDGE}",
-          "aaveAdapter": "${ARBITRUM_SEPOLIA_AAVE_ADAPTER}",
-          "compoundAdapter": "${ARBITRUM_SEPOLIA_COMPOUND_ADAPTER}",
-          "morphoAdapter": "${ARBITRUM_SEPOLIA_MORPHO_ADAPTER}",
-          "yieldMaxAdapter": "${ARBITRUM_SEPOLIA_YIELD_MAX_ADAPTER}"
-        }
-      ]
-    },
-    {
-      "chainName": "base-testnet-sepolia",
-      "addresses": [
-        {
-          "mockUSDC": "${BASE_SEPOLIA_MOCK_USDC}",
-          "faucet": "${BASE_SEPOLIA_FAUCET}",
-          "riskRegistry": "${BASE_SEPOLIA_RISK_REGISTRY}",
-          "shieldVault": "${BASE_SEPOLIA_SHIELD_VAULT}",
-          "shieldBridge": "${BASE_SEPOLIA_SHIELD_BRIDGE}",
-          "aaveAdapter": "${BASE_SEPOLIA_AAVE_ADAPTER}",
-          "compoundAdapter": "${BASE_SEPOLIA_COMPOUND_ADAPTER}",
-          "morphoAdapter": "${BASE_SEPOLIA_MORPHO_ADAPTER}",
-          "yieldMaxAdapter": "${BASE_SEPOLIA_YIELD_MAX_ADAPTER}",
+          "mockUSDC": "0x4d107C58DCda55ea6ea2B162d9C434F710E42038",
+          "faucet": "0x6E860FF2C4ea6b01815D74E54859Cdd9DD172256",
+          "riskRegistry": "0xa23BE1297F836FF7D4E3297320ff16dbc7903e6D",
+          "shieldVault": "0xcFBd47c63D284A8F824e586596Df4d5c57326c8B",
+          "shieldBridge": "0xA5D0CF3DC85538FfC93EF8941819e2b1b0460387",
+          "aaveAdapter": "0xB81961aA49d7E834404e299e688B3Dc09a5EFe5a",
+          "compoundAdapter": "0xcc547a2B0f18b34095623809977D54cfe306BEBF",
+          "morphoAdapter": "0x5f8A64Bc67f23b8d5d02c7CFE187AD42D59f1D59",
+          "yieldMaxAdapter": "0x5EbD6F3DA76C2B9C9d6aAC89DA08c388EaB2B3cb"
         }
       ]
     }
-  ]
+  ],
+  "offchainApis": {
+    "defiLlamaSlug": "aave",
+    "github": "https://api.github.com/repos/aave/aave-v3-core",
+    "goPlusChainId": "42161",
+    "goPlusTokenAddress": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+    "teamWallet": "https://api.arbiscan.io/api?module=account&action=balance&address=0xB81961aA49d7E834404e299e688B3Dc09a5EFe5a&tag=latest&apikey=YourApiKeyToken"
+  },
+  "shieldConfig": {
+    "warningWithdrawPercent": 3000,
+    "safeHavenAdapter": "aaveAdapter",
+    "maxSingleAdapterAllocation": 5000,
+    "rebalanceThresholdScoreChange": 15
+  }
 }
