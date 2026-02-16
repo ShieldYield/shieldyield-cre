@@ -34,24 +34,9 @@ export function detectAnomalies(
 ): Anomaly[] {
     const anomalies: Anomaly[] = [];
 
-    // --- TVL Drop >20% = Bank Run (CRITICAL) ---
-    if (offchain.tvl.tvlChange24hPercent < -20) {
-        anomalies.push({
-            type: "BANK_RUN",
-            severity: "CRITICAL",
-            adapter: adapter.name,
-            message: `TVL dropped ${offchain.tvl.tvlChange24hPercent.toFixed(1)}% in 24h — possible bank run`,
-        });
-    }
-    // --- TVL Drop >10% (WARNING) ---
-    else if (offchain.tvl.tvlChange24hPercent < -10) {
-        anomalies.push({
-            type: "TVL_DROP",
-            severity: "WARNING",
-            adapter: adapter.name,
-            message: `TVL dropped ${offchain.tvl.tvlChange24hPercent.toFixed(1)}% in 24h`,
-        });
-    }
+    // --- TVL Drop Detection: DISABLED (Data Streams integration in progress) ---
+    // TODO: Implement TVL change calculation using historical balance * price data
+    // For now, TVL_DROP and BANK_RUN anomalies are disabled
 
     // --- Honeypot Detected (CRITICAL) ---
     if (offchain.security.isHoneypot) {

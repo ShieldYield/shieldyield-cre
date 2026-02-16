@@ -7,7 +7,7 @@ import {
     toBytes,
 } from "viem";
 
-import type { ShieldConfig, OffchainApisConfig } from "../monitors/types";
+import type { ShieldConfig, OffchainApisConfig, DataStreamsConfig } from "../monitors/types";
 
 // ========================================
 // TYPE DEFINITIONS
@@ -34,6 +34,7 @@ export type Config = {
     schedule: string;
     evms: EvmConfig[];
     offchainApis: OffchainApisConfig;
+    dataStreams: DataStreamsConfig;
     shieldConfig: ShieldConfig;
 };
 

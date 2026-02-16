@@ -19,6 +19,7 @@
     }
   ],
   "offchainApis": {
+    "priceProxyUrl": "http://localhost:3000/api/price",
     "primaryProtocol": "AaveAdapter",
     "goPlusChainId": "42161",
     "adapters": {
@@ -46,6 +47,15 @@
         "goPlusTokenAddress": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
         "teamWallet": "0x5EbD6F3DA76C2B9C9d6aAC89DA08c388EaB2B3cb"
       }
+    }
+  },
+  "dataStreams": {
+    "apiKey": "${DATA_STREAMS_API_KEY}",
+    "apiSecret": "${DATA_STREAMS_API_SECRET}",
+    "feeds": {
+      "ETH_USD": "0x000359843a543ee2fe414dc14c7e7920ef10f4372990b79d6361cdc0dd1ba782",
+      "BTC_USD": "0x00037da06d56d083fe599397a4769a042d63aa73dc4ef57709d31e9971a5b439",
+      "USDC_USD": "0x00036fe43f87884450b4c7e093cd5ed99cac6640d8c2000e6afc02c8838d0265"
     }
   },
   "shieldConfig": {

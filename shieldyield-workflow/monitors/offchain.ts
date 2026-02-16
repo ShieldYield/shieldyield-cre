@@ -10,7 +10,7 @@ import {
 } from "@chainlink/cre-sdk";
 
 import type {
-    TvlSignal,
+    PriceSignal,
     GithubSignal,
     SecuritySignal,
     TeamWalletSignal,
@@ -18,43 +18,38 @@ import type {
 } from "./types";
 
 // ========================================
-// FUNGSI 1: Fetch TVL Data — DeFiLlama
+// FUNGSI 1: Fetch Price Data via Next.js Proxy
 // ========================================
-function fetchTvlData(
+// The Next.js proxy handles Chainlink Data Streams HMAC auth
+// and returns clean JSON: { ethUsd, btcUsd, usdcUsd, timestamp }
+function fetchPriceProxy(
     sendRequester: HTTPSendRequester,
-    protocolSlug: string
-): TvlSignal {
+    proxyUrl: string
+): PriceSignal {
     try {
         const resp = sendRequester
             .sendRequest({
-                url: `https://api.llama.fi/protocol/${protocolSlug}`,
+                url: proxyUrl,
                 method: "GET" as const,
+                headers: {
+                    "Content-Type": "application/json",
+                },
                 timeout: "8s",
             })
             .result();
 
         if (!ok(resp)) {
-            return { currentTvl: 0, tvlChange24hPercent: 0 };
+            return { ethUsd: 0, btcUsd: 0, usdcUsd: 1.0 };
         }
 
         const data = json(resp) as any;
-        const currentTvl: number = data.tvl || 0;
-
-        // Calculate 24h change from TVL history
-        const tvlHistory: { date: number; totalLiquidityUSD: number }[] = data.tvls || [];
-
-        if (tvlHistory.length >= 2) {
-            const latest = tvlHistory[tvlHistory.length - 1].totalLiquidityUSD;
-            const dayAgo = tvlHistory[tvlHistory.length - 2].totalLiquidityUSD;
-            const changePercent = dayAgo > 0
-                ? ((latest - dayAgo) / dayAgo) * 100
-                : 0;
-            return { currentTvl, tvlChange24hPercent: changePercent };
-        }
-
-        return { currentTvl, tvlChange24hPercent: 0 };
+        return {
+            ethUsd: Number(data.ethUsd) || 0,
+            btcUsd: Number(data.btcUsd) || 0,
+            usdcUsd: Number(data.usdcUsd) || 1.0,
+        };
     } catch {
-        return { currentTvl: 0, tvlChange24hPercent: 0 };
+        return { ethUsd: 0, btcUsd: 0, usdcUsd: 1.0 };
     }
 }
 
@@ -188,7 +183,7 @@ function fetchTeamWalletData(
 export function fetchAllOffchainSignals(
     runtime: Runtime<any>,
     config: {
-        defiLlamaSlug: string;
+        priceProxyUrl: string;
         githubUrl: string;
         goPlusUrl: string;
         teamWalletUrl: string;
@@ -196,19 +191,23 @@ export function fetchAllOffchainSignals(
 ): OffchainSignals {
     const httpClient = new HTTPClient();
 
-    // --- DeFiLlama: TVL velocity ---
-    const tvl = httpClient
+    // --- Chainlink Data Streams: Price feeds via Next.js Proxy ---
+    runtime.log("Fetching prices from Data Streams proxy...");
+
+    const prices = httpClient
         .sendRequest(
             runtime,
-            fetchTvlData,
-            ConsensusAggregationByFields<TvlSignal>({
-                currentTvl: median,
-                tvlChange24hPercent: median,
+            fetchPriceProxy,
+            ConsensusAggregationByFields<PriceSignal>({
+                ethUsd: median,
+                btcUsd: median,
+                usdcUsd: median,
             })
-        )(config.defiLlamaSlug)
+        )(config.priceProxyUrl)
         .result();
+
     runtime.log(
-        `📈 TVL: $${Math.round(tvl.currentTvl).toLocaleString()}, 24h change: ${tvl.tvlChange24hPercent.toFixed(2)}%`
+        `📈 Data Streams: ETH=$${prices.ethUsd.toFixed(2)}, BTC=$${prices.btcUsd.toFixed(2)}, USDC=$${prices.usdcUsd.toFixed(6)}`
     );
 
     // --- GitHub: Code Risk ---
@@ -260,5 +259,5 @@ export function fetchAllOffchainSignals(
         `👛 TeamWallet: balance=${teamWallet.balanceEth.toFixed(4)}ETH`
     );
 
-    return { tvl, github, security, teamWallet };
+    return { prices, github, security, teamWallet };
 }

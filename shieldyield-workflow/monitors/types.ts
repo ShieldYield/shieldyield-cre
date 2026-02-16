@@ -28,10 +28,11 @@ export interface ProtocolRiskSnapshot {
  * Sinyal off-chain yang diambil via HTTPClient
  */
 
-// --- DeFiLlama: TVL velocity ---
-export interface TvlSignal {
-    currentTvl: number;
-    tvlChange24hPercent: number; // negative = drop
+// --- Chainlink Data Streams: Real-time price feeds ---
+export interface PriceSignal {
+    ethUsd: number;  // ETH/USD price (18 decimals)
+    btcUsd: number;  // BTC/USD price (18 decimals)
+    usdcUsd: number; // USDC/USD price (18 decimals)
 }
 
 // --- GitHub: Code Risk ---
@@ -57,7 +58,7 @@ export interface TeamWalletSignal {
 }
 
 export interface OffchainSignals {
-    tvl: TvlSignal;
+    prices: PriceSignal;
     github: GithubSignal;
     security: SecuritySignal;
     teamWallet: TeamWalletSignal;
@@ -89,12 +90,30 @@ export interface AdapterApiConfig {
  * Off-chain APIs configuration with per-adapter support
  */
 export interface OffchainApisConfig {
+    /** URL of the Next.js price proxy (handles Data Streams HMAC auth) */
+    priceProxyUrl: string;
     /** Which adapter key to use as primary for off-chain fetching (HTTP limit: 5) */
     primaryProtocol: string;
     /** GoPlus chain ID (shared across adapters on same chain) */
     goPlusChainId: string;
     /** Per-adapter API config */
     adapters: Record<string, AdapterApiConfig>;
+}
+
+/**
+ * Chainlink Data Streams configuration
+ */
+export interface DataStreamsConfig {
+    /** Data Streams API key */
+    apiKey: string;
+    /** Data Streams API secret */
+    apiSecret: string;
+    /** Price feed IDs */
+    feeds: {
+        ETH_USD: string;
+        BTC_USD: string;
+        USDC_USD: string;
+    };
 }
 
 /**

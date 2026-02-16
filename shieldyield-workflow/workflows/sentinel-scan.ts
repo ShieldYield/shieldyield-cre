@@ -58,7 +58,7 @@ export const onCronTrigger = (runtime: Runtime<Config>): string => {
 
         runtime.log(`Using primary protocol: ${apisConfig.primaryProtocol}`);
         const offchain = fetchAllOffchainSignals(runtime, {
-            defiLlamaSlug: primaryAdapter.defiLlamaSlug,
+            priceProxyUrl: apisConfig.priceProxyUrl,
             githubUrl: primaryAdapter.github,
             goPlusUrl,
             teamWalletUrl,

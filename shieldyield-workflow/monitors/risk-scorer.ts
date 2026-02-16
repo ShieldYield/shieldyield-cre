@@ -50,14 +50,9 @@ export function computeRiskScore(
     // OFF-CHAIN SIGNALS (55%)
     // =============================================
 
-    // 4. TVL velocity — DeFiLlama (15%)
-    if (offchain.tvl.tvlChange24hPercent < -20) {
-        score += 15; // CRITICAL: bank run
-    } else if (offchain.tvl.tvlChange24hPercent < -10) {
-        score += 10; // WARNING: significant outflow
-    } else if (offchain.tvl.tvlChange24hPercent < -5) {
-        score += 5;  // WATCH: notable drop
-    }
+    // 4. TVL velocity — DISABLED (Data Streams integration in progress)
+    // TODO: Implement TVL calculation using historical balance * price data
+    // For now, skip TVL-based scoring (0% weight)
 
     // 5. Security flags — GoPlus (15%)
     if (offchain.security.isHoneypot) {
