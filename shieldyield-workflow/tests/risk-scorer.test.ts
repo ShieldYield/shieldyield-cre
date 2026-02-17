@@ -48,7 +48,8 @@ function makeUnhealthyAdapter(name = "RiskyAdapter"): AdapterSnapshot {
 
 function makeSafeOffchain(): OffchainSignals {
     return {
-        tvl: { currentTvl: 5_000_000_000, tvlChange24hPercent: 2.5 },
+        prices: { ethUsd: 2500, btcUsd: 45000, usdcUsd: 1.0 },
+        tvl: { currentTvl: 5_000_000_000, tvlChangePercent: 2.5 },
         github: { recentCommits: 15, openIssues: 3, lastPushDaysAgo: 2 },
         security: {
             isHoneypot: false,
@@ -63,7 +64,8 @@ function makeSafeOffchain(): OffchainSignals {
 
 function makeEmergingRiskOffchain(): OffchainSignals {
     return {
-        tvl: { currentTvl: 3_000_000_000, tvlChange24hPercent: -8 },
+        prices: { ethUsd: 2500, btcUsd: 45000, usdcUsd: 1.0 },
+        tvl: { currentTvl: 3_000_000_000, tvlChangePercent: -8 },
         github: { recentCommits: 0, openIssues: 12, lastPushDaysAgo: 20 },
         security: {
             isHoneypot: false,
@@ -78,7 +80,8 @@ function makeEmergingRiskOffchain(): OffchainSignals {
 
 function makeCriticalOffchain(): OffchainSignals {
     return {
-        tvl: { currentTvl: 500_000, tvlChange24hPercent: -35 },
+        prices: { ethUsd: 2500, btcUsd: 45000, usdcUsd: 1.0 },
+        tvl: { currentTvl: 500_000, tvlChangePercent: -35 },
         github: { recentCommits: 0, openIssues: 100, lastPushDaysAgo: 90 },
         security: {
             isHoneypot: true,     // HONEYPOT!

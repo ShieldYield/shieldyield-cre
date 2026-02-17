@@ -28,11 +28,19 @@ export interface ProtocolRiskSnapshot {
  * Sinyal off-chain yang diambil via HTTPClient
  */
 
-// --- Chainlink Data Streams: Real-time price feeds ---
+// --- TVL: Calculated from on-chain balance * Chainlink price, tracked over time ---
+export interface TvlSignal {
+    /** Current TVL in USD (adapter balance * usdcPrice) */
+    currentTvl: number;
+    /** TVL change% from historical snapshot (via tvl-history proxy), fallback to balance vs principal */
+    tvlChangePercent: number;
+}
+
+// --- Chainlink Price Feeds: On-chain price data ---
 export interface PriceSignal {
-    ethUsd: number;  // ETH/USD price (18 decimals)
-    btcUsd: number;  // BTC/USD price (18 decimals)
-    usdcUsd: number; // USDC/USD price (18 decimals)
+    ethUsd: number;  // ETH/USD price
+    btcUsd: number;  // BTC/USD price
+    usdcUsd: number; // USDC/USD price
 }
 
 // --- GitHub: Code Risk ---
@@ -59,6 +67,7 @@ export interface TeamWalletSignal {
 
 export interface OffchainSignals {
     prices: PriceSignal;
+    tvl: TvlSignal;
     github: GithubSignal;
     security: SecuritySignal;
     teamWallet: TeamWalletSignal;
@@ -90,8 +99,8 @@ export interface AdapterApiConfig {
  * Off-chain APIs configuration with per-adapter support
  */
 export interface OffchainApisConfig {
-    /** URL of the Next.js price proxy (handles Data Streams HMAC auth) */
-    priceProxyUrl: string;
+    /** URL of the TVL history proxy for historical tracking */
+    tvlHistoryUrl: string;
     /** Which adapter key to use as primary for off-chain fetching (HTTP limit: 5) */
     primaryProtocol: string;
     /** GoPlus chain ID (shared across adapters on same chain) */
@@ -101,19 +110,15 @@ export interface OffchainApisConfig {
 }
 
 /**
- * Chainlink Data Streams configuration
+ * Chainlink On-Chain Price Feed addresses per chain
  */
-export interface DataStreamsConfig {
-    /** Data Streams API key */
-    apiKey: string;
-    /** Data Streams API secret */
-    apiSecret: string;
-    /** Price feed IDs */
-    feeds: {
-        ETH_USD: string;
-        BTC_USD: string;
-        USDC_USD: string;
-    };
+export interface PriceFeedsConfig {
+    /** ETH/USD AggregatorV3 contract address */
+    ETH_USD: string;
+    /** BTC/USD AggregatorV3 contract address */
+    BTC_USD: string;
+    /** USDC/USD AggregatorV3 contract address (zero address = fallback to 1.0) */
+    USDC_USD: string;
 }
 
 /**

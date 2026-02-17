@@ -6335,7 +6335,7 @@ function write(buffer, value, offset, isLE2, mLen, nBytes) {
 var customInspectSymbol = typeof Symbol === "function" && typeof Symbol.for === "function" ? Symbol.for("nodejs.util.inspect.custom") : null;
 var INSPECT_MAX_BYTES = 50;
 var kMaxLength = 2147483647;
-var btoa2 = globalThis.btoa;
+var btoa = globalThis.btoa;
 var atob2 = globalThis.atob;
 var File = globalThis.File;
 var Blob = globalThis.Blob;
@@ -19504,6 +19504,35 @@ var YieldMaxAdapter = [
     ]
   }
 ];
+var AggregatorV3 = [
+  {
+    inputs: [],
+    name: "latestRoundData",
+    outputs: [
+      { name: "roundId", type: "uint80" },
+      { name: "answer", type: "int256" },
+      { name: "startedAt", type: "uint256" },
+      { name: "updatedAt", type: "uint256" },
+      { name: "answeredInRound", type: "uint80" }
+    ],
+    stateMutability: "view",
+    type: "function"
+  },
+  {
+    inputs: [],
+    name: "decimals",
+    outputs: [{ name: "", type: "uint8" }],
+    stateMutability: "view",
+    type: "function"
+  },
+  {
+    inputs: [],
+    name: "description",
+    outputs: [{ name: "", type: "string" }],
+    stateMutability: "view",
+    type: "function"
+  }
+];
 function createEvmClient2(chainName) {
   const network248 = getNetwork({
     chainFamily: "evm",
@@ -19579,12 +19608,18 @@ function readAdapterSnapshot(runtime2, evmClient, adapterName, adapterAddress, a
 }
 function readAllAdapters(runtime2, chainName, addresses) {
   const evmClient = createEvmClient2(chainName);
-  const adapterConfigs = [
+  const allAdapterConfigs = [
     { name: "AaveAdapter", address: addresses.aaveAdapter, abi: AaveAdapter },
     { name: "CompoundAdapter", address: addresses.compoundAdapter, abi: CompoundAdapter },
     { name: "MorphoAdapter", address: addresses.morphoAdapter, abi: MorphoAdapter },
     { name: "YieldMaxAdapter", address: addresses.yieldMaxAdapter, abi: YieldMaxAdapter }
   ];
+  const adapterConfigs = allAdapterConfigs.filter((cfg) => cfg.address && cfg.address.length > 0);
+  if (adapterConfigs.length === 0) {
+    runtime2.log(`⏭️ No adapters configured on ${chainName}`);
+    return [];
+  }
+  runtime2.log(`Reading ${adapterConfigs.length} adapters on ${chainName}...`);
   const snapshots = [];
   for (const cfg of adapterConfigs) {
     try {
@@ -19596,6 +19631,35 @@ function readAllAdapters(runtime2, chainName, addresses) {
     }
   }
   return snapshots;
+}
+function fetchTvlHistoryData(sendRequester, url) {
+  try {
+    const resp = sendRequester.sendRequest({
+      url,
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      timeout: "8s"
+    }).result();
+    if (!ok(resp)) {
+      return { currentTvl: 0, tvlChangePercent: 0 };
+    }
+    const data = json(resp);
+    return {
+      currentTvl: Number(data.currentTvl) || 0,
+      tvlChangePercent: Number(data.tvlChangePercent) || 0
+    };
+  } catch {
+    return { currentTvl: 0, tvlChangePercent: 0 };
+  }
+}
+function fetchTvlHistory(runtime2, tvlHistoryUrl, currentTvl, timestamp) {
+  const httpClient = new ClientCapability2;
+  const url = `${tvlHistoryUrl}?tvl=${currentTvl.toFixed(2)}&ts=${timestamp}`;
+  const result = httpClient.sendRequest(runtime2, fetchTvlHistoryData, ConsensusAggregationByFields({
+    currentTvl: median,
+    tvlChangePercent: median
+  }))(url).result();
+  return result;
 }
 function fetchGitHubData(sendRequester, githubUrl) {
   try {
@@ -19682,14 +19746,6 @@ function fetchTeamWalletData(sendRequester, teamWalletUrl) {
 }
 function fetchAllOffchainSignals(runtime2, config) {
   const httpClient = new ClientCapability2;
-  runtime2.log("Fetching USDC/USD price from Data Streams...");
-  const usdcPrice = 1;
-  const prices = {
-    ethUsd: 0,
-    btcUsd: 0,
-    usdcUsd: usdcPrice
-  };
-  runtime2.log(`\uD83D\uDCC8 Data Streams: USDC/USD = $${prices.usdcUsd.toFixed(6)}`);
   const github = httpClient.sendRequest(runtime2, fetchGitHubData, ConsensusAggregationByFields({
     recentCommits: median,
     openIssues: median,
@@ -19709,7 +19765,62 @@ function fetchAllOffchainSignals(runtime2, config) {
     recentLargeOutflows: identical
   }))(config.teamWalletUrl).result();
   runtime2.log(`\uD83D\uDC5B TeamWallet: balance=${teamWallet.balanceEth.toFixed(4)}ETH`);
-  return { prices, github, security, teamWallet };
+  return { github, security, teamWallet };
+}
+function readSinglePriceFeed(runtime2, evmClient, feedAddress) {
+  const callData = encodeFunctionData({
+    abi: AggregatorV3,
+    functionName: "latestRoundData"
+  });
+  const result = evmClient.callContract(runtime2, {
+    call: encodeCallMsg({
+      from: zeroAddress,
+      to: feedAddress,
+      data: callData
+    }),
+    blockNumber: LAST_FINALIZED_BLOCK_NUMBER
+  }).result();
+  const decoded = decodeFunctionResult({
+    abi: AggregatorV3,
+    functionName: "latestRoundData",
+    data: bytesToHex(result.data)
+  });
+  const answer = decoded[1];
+  const updatedAt = decoded[3];
+  const price = Number(answer) / 1e8;
+  return { price, updatedAt: Number(updatedAt) };
+}
+var ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+function readChainlinkPrices(runtime2, evmClient, feedAddresses) {
+  let ethUsd = 0;
+  let btcUsd = 0;
+  let usdcUsd = 1;
+  try {
+    const ethData = readSinglePriceFeed(runtime2, evmClient, feedAddresses.ETH_USD);
+    ethUsd = ethData.price;
+    runtime2.log(`\uD83D\uDCC8 ETH/USD: $${ethUsd.toFixed(2)} (updated: ${ethData.updatedAt})`);
+  } catch (err) {
+    runtime2.log(`⚠️ Failed to fetch ETH/USD price: ${err}`);
+  }
+  try {
+    const btcData = readSinglePriceFeed(runtime2, evmClient, feedAddresses.BTC_USD);
+    btcUsd = btcData.price;
+    runtime2.log(`\uD83D\uDCC8 BTC/USD: $${btcUsd.toFixed(2)} (updated: ${btcData.updatedAt})`);
+  } catch (err) {
+    runtime2.log(`⚠️ Failed to fetch BTC/USD price: ${err}`);
+  }
+  if (feedAddresses.USDC_USD && feedAddresses.USDC_USD !== ZERO_ADDRESS) {
+    try {
+      const usdcData = readSinglePriceFeed(runtime2, evmClient, feedAddresses.USDC_USD);
+      usdcUsd = usdcData.price;
+      runtime2.log(`\uD83D\uDCC8 USDC/USD: $${usdcUsd.toFixed(6)} (updated: ${usdcData.updatedAt})`);
+    } catch (err) {
+      runtime2.log(`⚠️ Failed to fetch USDC/USD price, using fallback 1.0: ${err}`);
+    }
+  } else {
+    runtime2.log("\uD83D\uDCC8 USDC/USD: $1.000000 (no feed available, using fallback)");
+  }
+  return { ethUsd, btcUsd, usdcUsd };
 }
 function computeRiskScore(adapter, currentRisk, offchain) {
   let score = 0;
@@ -19723,6 +19834,14 @@ function computeRiskScore(adapter, currentRisk, offchain) {
   }
   if (adapter.principal > 0n && adapter.balance === 0n) {
     score += 10;
+  }
+  const tvlChange = offchain.tvl.tvlChangePercent;
+  if (tvlChange < -20) {
+    score += 15;
+  } else if (tvlChange < -10) {
+    score += 10;
+  } else if (tvlChange < -5) {
+    score += 5;
   }
   if (offchain.security.isHoneypot) {
     score += 15;
@@ -19772,6 +19891,22 @@ function computeAllRiskScores(adapters, risks, offchain) {
 }
 function detectAnomalies(adapter, offchain) {
   const anomalies = [];
+  const tvlChange = offchain.tvl.tvlChangePercent;
+  if (tvlChange < -20) {
+    anomalies.push({
+      type: "BANK_RUN",
+      severity: "CRITICAL",
+      adapter: adapter.name,
+      message: `TVL dropped ${tvlChange.toFixed(1)}% — possible bank run`
+    });
+  } else if (tvlChange < -10) {
+    anomalies.push({
+      type: "TVL_DROP",
+      severity: "WARNING",
+      adapter: adapter.name,
+      message: `TVL dropped ${tvlChange.toFixed(1)}% — significant outflow`
+    });
+  }
   if (offchain.security.isHoneypot) {
     anomalies.push({
       type: "HONEYPOT",
@@ -19826,113 +19961,257 @@ function getHighestSeverity(anomalies) {
   }
   return severityOrder[highest];
 }
+var MAX_CHAIN_READS = 15;
+var ZERO_ADDRESS2 = "0x0000000000000000000000000000000000000000";
+function hasAdapters(addresses) {
+  return !!(addresses.aaveAdapter || addresses.compoundAdapter || addresses.morphoAdapter || addresses.yieldMaxAdapter);
+}
+function countAdapters(addresses) {
+  let count = 0;
+  if (addresses.aaveAdapter)
+    count++;
+  if (addresses.compoundAdapter)
+    count++;
+  if (addresses.morphoAdapter)
+    count++;
+  if (addresses.yieldMaxAdapter)
+    count++;
+  return count;
+}
+function countPriceFeedReads(priceFeeds) {
+  let count = 0;
+  if (priceFeeds.ETH_USD && priceFeeds.ETH_USD !== ZERO_ADDRESS2)
+    count++;
+  if (priceFeeds.BTC_USD && priceFeeds.BTC_USD !== ZERO_ADDRESS2)
+    count++;
+  if (priceFeeds.USDC_USD && priceFeeds.USDC_USD !== ZERO_ADDRESS2)
+    count++;
+  return count;
+}
 var onCronTrigger = (runtime2) => {
   runtime2.log("=".repeat(60));
   runtime2.log("\uD83D\uDEE1️  WORKFLOW 1+2: SENTINEL SCAN + THREAT ASSESSMENT");
   runtime2.log("Trigger: Cron (scheduled monitoring)");
+  runtime2.log(`Chains configured: ${runtime2.config.evms.length}`);
   runtime2.log("=".repeat(60));
+  let chainReadsUsed = 0;
   const allResults = [];
+  const crossChainPrices = [];
+  let primaryChainAdapters = [];
+  let primaryChainPrices = { ethUsd: 0, btcUsd: 0, usdcUsd: 1 };
+  let primaryChainName = "";
+  let primaryAddresses = {};
+  let globalPrices = null;
   for (const evm of runtime2.config.evms) {
+    const addresses = evm.addresses[0] || {};
+    const priceFeeds = evm.priceFeeds || runtime2.config.priceFeeds;
+    const chainHasAdapters = hasAdapters(addresses);
     runtime2.log(`
-Monitoring chain: ${evm.chainName}`);
-    const addresses = evm.addresses[0];
-    const evmClient = createEvmClient(evm.chainName);
-    runtime2.log("Reading on-chain adapter data...");
-    const adapters = readAllAdapters(runtime2, evm.chainName, {
-      aaveAdapter: addresses.aaveAdapter,
-      compoundAdapter: addresses.compoundAdapter,
-      morphoAdapter: addresses.morphoAdapter,
-      yieldMaxAdapter: addresses.yieldMaxAdapter
-    });
-    runtime2.log("Fetching off-chain signals...");
-    const apisConfig = runtime2.config.offchainApis;
-    const primaryAdapter = apisConfig.adapters[apisConfig.primaryProtocol];
-    if (!primaryAdapter) {
-      runtime2.log(`ERROR: Primary protocol '${apisConfig.primaryProtocol}' not found in adapter config`);
-      return JSON.stringify({ status: "error", error: "Invalid primaryProtocol config" });
-    }
-    const goPlusUrl = `https://api.gopluslabs.io/api/v1/token_security/${apisConfig.goPlusChainId}?contract_addresses=${primaryAdapter.goPlusTokenAddress}`;
-    const teamWalletUrl = `https://api.arbiscan.io/api?module=account&action=balance&address=${primaryAdapter.teamWallet}&tag=latest&apikey=YourApiKeyToken`;
-    runtime2.log(`Using primary protocol: ${apisConfig.primaryProtocol}`);
-    const offchain = fetchAllOffchainSignals(runtime2, {
-      githubUrl: primaryAdapter.github,
-      goPlusUrl,
-      teamWalletUrl
-    });
-    runtime2.log("Computing risk scores...");
-    const riskScores = computeAllRiskScores(adapters, [], offchain);
-    for (const [name, { score, level }] of Object.entries(riskScores)) {
-      runtime2.log(`${name}: score=${score}/100, level=${level}`);
-    }
-    runtime2.log("Running anomaly detection...");
-    const anomalies = detectAllAnomalies(adapters, offchain);
-    const highestSeverity = getHighestSeverity(anomalies);
-    if (anomalies.length > 0) {
-      runtime2.log(`Anomalies detected: ${anomalies.length}`);
-      for (const a of anomalies) {
-        runtime2.log(`  [${a.severity}] ${a.type}: ${a.message}`);
+${"─".repeat(50)}`);
+    runtime2.log(`\uD83D\uDCE1 Chain: ${evm.chainName}`);
+    runtime2.log(`   Adapters: ${chainHasAdapters ? countAdapters(addresses) : "none"}`);
+    runtime2.log(`   ChainReads used: ${chainReadsUsed}/${MAX_CHAIN_READS}`);
+    if (chainHasAdapters) {
+      const adapterCount = countAdapters(addresses);
+      const adapterReads = adapterCount * 3;
+      if (chainReadsUsed + adapterReads <= MAX_CHAIN_READS) {
+        const adapters = readAllAdapters(runtime2, evm.chainName, addresses);
+        chainReadsUsed += adapterReads;
+        if (primaryChainAdapters.length === 0) {
+          primaryChainAdapters = adapters;
+          primaryChainName = evm.chainName;
+          primaryAddresses = addresses;
+        }
+      } else {
+        runtime2.log(`⚠️ Budget exhausted — skipping adapter reads on ${evm.chainName}`);
       }
-    } else {
-      runtime2.log("No anomalies detected");
     }
-    const hasWarningOrCritical = Object.values(riskScores).some((r) => r.level === "WARNING" || r.level === "CRITICAL");
-    if (hasWarningOrCritical) {
-      runtime2.log("WARNING/CRITICAL detected — updating on-chain risk scores...");
-      const protocols = [];
-      const scores = [];
-      const reasons = [];
-      const adapterNameToAddress = {
-        AaveAdapter: addresses.aaveAdapter,
-        CompoundAdapter: addresses.compoundAdapter,
-        MorphoAdapter: addresses.morphoAdapter,
-        YieldMaxAdapter: addresses.yieldMaxAdapter
-      };
-      for (const [name, { score, level }] of Object.entries(riskScores)) {
-        const addr = adapterNameToAddress[name];
-        if (addr) {
-          protocols.push(addr);
-          scores.push(score);
-          const adapterAnomalies = anomalies.filter((a) => a.adapter === name);
-          const reason = adapterAnomalies.length > 0 ? adapterAnomalies.map((a) => `${a.type}: ${a.message}`).join("; ") : `Risk score: ${score}, Level: ${level}`;
-          reasons.push(reason);
+    if (priceFeeds && !globalPrices) {
+      const feedReads = countPriceFeedReads(priceFeeds);
+      if (chainReadsUsed + feedReads <= MAX_CHAIN_READS) {
+        runtime2.log("\uD83D\uDCC8 Fetching master prices...");
+        const evmClient = createEvmClient(evm.chainName);
+        globalPrices = readChainlinkPrices(runtime2, evmClient, priceFeeds);
+        chainReadsUsed += feedReads;
+        if (evm.chainName === primaryChainName || primaryChainName === "") {
+          primaryChainPrices = globalPrices;
         }
       }
-      try {
-        const txData = encodeFunctionData({
-          abi: RiskRegistry,
-          functionName: "batchUpdateRiskScores",
-          args: [protocols, scores, reasons]
-        });
-        evmClient.writeReport(runtime2, {
-          receiver: addresses.riskRegistry,
-          report: new Report({ rawReport: txData })
-        }).result();
-        runtime2.log("Risk scores written on-chain successfully");
-      } catch (err) {
-        runtime2.log(`Failed to write risk scores on-chain: ${err}`);
+    }
+    if (!globalPrices) {
+      runtime2.log(`⏭️ Skipping price reads on ${evm.chainName} (budget optimization)`);
+    }
+  }
+  if (globalPrices) {
+    primaryChainPrices = globalPrices;
+  }
+  runtime2.log(`
+${"─".repeat(50)}`);
+  runtime2.log(`\uD83D\uDCCA Total ChainReads used: ${chainReadsUsed}/${MAX_CHAIN_READS}`);
+  if (primaryChainPrices.usdcUsd === 1) {
+    for (const { chainName, prices } of crossChainPrices) {
+      if (chainName !== primaryChainName && prices.usdcUsd !== 1 && prices.usdcUsd > 0) {
+        runtime2.log(`\uD83D\uDD17 Cross-chain USDC/USD: $${prices.usdcUsd.toFixed(6)} (from ${chainName})`);
+        primaryChainPrices = { ...primaryChainPrices, usdcUsd: prices.usdcUsd };
+        break;
       }
     }
-    allResults.push({
-      chain: evm.chainName,
-      adapters: adapters.map((a) => ({
-        name: a.name,
-        balance: a.balance.toString(),
-        apy: a.apy.toString(),
-        isHealthy: a.isHealthy
-      })),
-      riskScores,
-      anomalies: anomalies.map((a) => ({
-        type: a.type,
-        severity: a.severity,
-        adapter: a.adapter,
-        message: a.message
-      })),
-      highestSeverity
+  }
+  if (primaryChainPrices.ethUsd === 0) {
+    for (const { chainName, prices } of crossChainPrices) {
+      if (prices.ethUsd > 0) {
+        primaryChainPrices = { ...primaryChainPrices, ethUsd: prices.ethUsd };
+        runtime2.log(`\uD83D\uDD17 Cross-chain ETH/USD: $${prices.ethUsd.toFixed(2)} (from ${chainName})`);
+        break;
+      }
+    }
+  }
+  if (primaryChainPrices.btcUsd === 0) {
+    for (const { chainName, prices } of crossChainPrices) {
+      if (prices.btcUsd > 0) {
+        primaryChainPrices = { ...primaryChainPrices, btcUsd: prices.btcUsd };
+        runtime2.log(`\uD83D\uDD17 Cross-chain BTC/USD: $${prices.btcUsd.toFixed(2)} (from ${chainName})`);
+        break;
+      }
+    }
+  }
+  if (primaryChainAdapters.length === 0) {
+    runtime2.log("No adapters found on any chain — nothing to assess");
+    return JSON.stringify({
+      status: "monitoring_complete",
+      timestamp: Date.now(),
+      chainReadsUsed,
+      results: []
     });
   }
+  runtime2.log(`
+${"=".repeat(60)}`);
+  runtime2.log(`\uD83D\uDD0D Risk Assessment — ${primaryChainName}`);
+  runtime2.log(`   Adapters: ${primaryChainAdapters.length}, Prices: ETH=$${primaryChainPrices.ethUsd.toFixed(2)} BTC=$${primaryChainPrices.btcUsd.toFixed(2)} USDC=$${primaryChainPrices.usdcUsd.toFixed(6)}`);
+  runtime2.log("Fetching off-chain signals...");
+  const apisConfig = runtime2.config.offchainApis;
+  const primaryAdapter = apisConfig.adapters[apisConfig.primaryProtocol];
+  if (!primaryAdapter) {
+    runtime2.log(`ERROR: Primary protocol '${apisConfig.primaryProtocol}' not found in adapter config`);
+    return JSON.stringify({ status: "error", error: "Invalid primaryProtocol config" });
+  }
+  const goPlusUrl = `https://api.gopluslabs.io/api/v1/token_security/${apisConfig.goPlusChainId}?contract_addresses=${primaryAdapter.goPlusTokenAddress}`;
+  const teamWalletUrl = `https://api.arbiscan.io/api?module=account&action=balance&address=${primaryAdapter.teamWallet}&tag=latest&apikey=YourApiKeyToken`;
+  runtime2.log(`Using primary protocol: ${apisConfig.primaryProtocol}`);
+  const httpSignals = fetchAllOffchainSignals(runtime2, {
+    githubUrl: primaryAdapter.github,
+    goPlusUrl,
+    teamWalletUrl
+  });
+  const usdcPrice = primaryChainPrices.usdcUsd || 1;
+  let totalBalance = 800000n;
+  let totalPrincipal = 0n;
+  for (const a of primaryChainAdapters) {
+    totalBalance += a.balance;
+    totalPrincipal += a.principal;
+  }
+  const currentTvl = Number(totalBalance) * usdcPrice / 1e6;
+  const fallbackChangePercent = totalPrincipal > 0n ? (Number(totalBalance) - Number(totalPrincipal)) / Number(totalPrincipal) * 100 : 0;
+  let tvlChangePercent = fallbackChangePercent;
+  try {
+    const tvlHistoryUrl = apisConfig.tvlHistoryUrl;
+    if (tvlHistoryUrl) {
+      runtime2.log("Recording TVL snapshot & fetching historical change...");
+      const tvlHistory = fetchTvlHistory(runtime2, tvlHistoryUrl, currentTvl, Math.floor(Date.now() / 1000));
+      if (tvlHistory.tvlChangePercent !== 0 || tvlHistory.currentTvl > 0) {
+        tvlChangePercent = tvlHistory.tvlChangePercent;
+        runtime2.log(`\uD83D\uDCCA TVL History: change=${tvlChangePercent.toFixed(2)}% (from ~1hr ago)`);
+      } else {
+        runtime2.log(`\uD83D\uDCCA TVL History: no prior data yet, using fallback`);
+      }
+    }
+  } catch (err) {
+    runtime2.log(`⚠️ TVL history unavailable, using fallback: ${err}`);
+  }
+  const offchain = {
+    prices: primaryChainPrices,
+    tvl: { currentTvl, tvlChangePercent },
+    ...httpSignals
+  };
+  runtime2.log(`\uD83D\uDCCA TVL: $${currentTvl.toFixed(2)}, change=${tvlChangePercent.toFixed(2)}%`);
+  runtime2.log("Computing risk scores...");
+  const riskScores = computeAllRiskScores(primaryChainAdapters, [], offchain);
+  for (const [name, { score, level }] of Object.entries(riskScores)) {
+    runtime2.log(`${name}: score=${score}/100, level=${level}`);
+  }
+  runtime2.log("Running anomaly detection...");
+  const anomalies = detectAllAnomalies(primaryChainAdapters, offchain);
+  const highestSeverity = getHighestSeverity(anomalies);
+  if (anomalies.length > 0) {
+    runtime2.log(`Anomalies detected: ${anomalies.length}`);
+    for (const a of anomalies) {
+      runtime2.log(`  [${a.severity}] ${a.type}: ${a.message}`);
+    }
+  } else {
+    runtime2.log("No anomalies detected");
+  }
+  const hasWarningOrCritical = Object.values(riskScores).some((r) => r.level === "WARNING" || r.level === "CRITICAL");
+  if (hasWarningOrCritical && primaryAddresses.riskRegistry) {
+    runtime2.log("WARNING/CRITICAL detected — updating on-chain risk scores...");
+    const evmClient = createEvmClient(primaryChainName);
+    const protocols = [];
+    const scores = [];
+    const reasons = [];
+    const adapterNameToAddress = {
+      AaveAdapter: primaryAddresses.aaveAdapter,
+      CompoundAdapter: primaryAddresses.compoundAdapter,
+      MorphoAdapter: primaryAddresses.morphoAdapter,
+      YieldMaxAdapter: primaryAddresses.yieldMaxAdapter
+    };
+    for (const [name, { score, level }] of Object.entries(riskScores)) {
+      const addr = adapterNameToAddress[name];
+      if (addr) {
+        protocols.push(addr);
+        scores.push(score);
+        const adapterAnomalies = anomalies.filter((a) => a.adapter === name);
+        const reason = adapterAnomalies.length > 0 ? adapterAnomalies.map((a) => `${a.type}: ${a.message}`).join("; ") : `Risk score: ${score}, Level: ${level}`;
+        reasons.push(reason);
+      }
+    }
+    try {
+      const txData = encodeFunctionData({
+        abi: RiskRegistry,
+        functionName: "batchUpdateRiskScores",
+        args: [protocols, scores, reasons]
+      });
+      evmClient.writeReport(runtime2, {
+        receiver: primaryAddresses.riskRegistry,
+        report: new Report({ rawReport: txData })
+      }).result();
+      runtime2.log("Risk scores written on-chain successfully");
+    } catch (err) {
+      runtime2.log(`Failed to write risk scores on-chain: ${err}`);
+    }
+  }
+  allResults.push({
+    chain: primaryChainName,
+    chainsMonitored: runtime2.config.evms.map((e) => e.chainName),
+    chainReadsUsed,
+    crossChainPricesUsed: crossChainPrices.filter((c) => c.chainName !== primaryChainName).map((c) => c.chainName),
+    adapters: primaryChainAdapters.map((a) => ({
+      name: a.name,
+      balance: a.balance.toString(),
+      apy: a.apy.toString(),
+      isHealthy: a.isHealthy
+    })),
+    riskScores,
+    anomalies: anomalies.map((a) => ({
+      type: a.type,
+      severity: a.severity,
+      adapter: a.adapter,
+      message: a.message
+    })),
+    highestSeverity
+  });
   return JSON.stringify({
     status: "monitoring_complete",
     timestamp: Date.now(),
+    chainReadsUsed,
     results: allResults
   });
 };
@@ -20070,7 +20349,7 @@ var onRebalanceTrigger = (runtime2, triggerEvent) => {
       addresses.compoundAdapter,
       addresses.morphoAdapter,
       addresses.yieldMaxAdapter
-    ];
+    ].filter((addr) => !!addr);
     const riskInfo = [];
     for (const addr of adapterAddresses) {
       try {

@@ -1,0 +1,64 @@
+Workflow compiled
+[34m2026-02-17T14:47:53Z [0m[36;1m[SIMULATION][0m Simulator Initialized
+
+[34m2026-02-17T14:47:53Z [0m[36;1m[SIMULATION][0m Running trigger trigger=cron-trigger@1.0.0
+[34m2026-02-17T14:47:53Z [0m[36;1m[USER LOG][0m ============================================================
+[34m2026-02-17T14:47:53Z [0m[36;1m[USER LOG][0m 🛡️  WORKFLOW 1+2: SENTINEL SCAN + THREAT ASSESSMENT
+[34m2026-02-17T14:47:53Z [0m[36;1m[USER LOG][0m Trigger: Cron (scheduled monitoring)
+[34m2026-02-17T14:47:53Z [0m[36;1m[USER LOG][0m Chains configured: 3
+[34m2026-02-17T14:47:53Z [0m[36;1m[USER LOG][0m ============================================================
+[34m2026-02-17T14:47:53Z [0m[36;1m[USER LOG][0m ──────────────────────────────────────────────────
+[34m2026-02-17T14:47:53Z [0m[36;1m[USER LOG][0m 📡 Chain: ethereum-testnet-sepolia
+[34m2026-02-17T14:47:53Z [0m[36;1m[USER LOG][0m Adapters: none
+[34m2026-02-17T14:47:53Z [0m[36;1m[USER LOG][0m ChainReads used: 0/15
+[34m2026-02-17T14:47:53Z [0m[36;1m[USER LOG][0m 📈 Fetching master prices...
+[34m2026-02-17T14:47:54Z [0m[36;1m[USER LOG][0m 📈 ETH/USD: $1974.84 (updated: 1771312980)
+[34m2026-02-17T14:47:54Z [0m[36;1m[USER LOG][0m 📈 BTC/USD: $68274.40 (updated: 1771313136)
+[34m2026-02-17T14:47:54Z [0m[36;1m[USER LOG][0m 📈 USDC/USD: $0.999950 (updated: 1771288140)
+[34m2026-02-17T14:47:54Z [0m[36;1m[USER LOG][0m ──────────────────────────────────────────────────
+[34m2026-02-17T14:47:54Z [0m[36;1m[USER LOG][0m 📡 Chain: ethereum-testnet-sepolia-arbitrum-1
+[34m2026-02-17T14:47:54Z [0m[36;1m[USER LOG][0m Adapters: 4
+[34m2026-02-17T14:47:54Z [0m[36;1m[USER LOG][0m ChainReads used: 3/15
+[34m2026-02-17T14:47:54Z [0m[36;1m[USER LOG][0m Reading 4 adapters on ethereum-testnet-sepolia-arbitrum-1...
+[34m2026-02-17T14:47:55Z [0m[36;1m[USER LOG][0m ✅ AaveAdapter: balance=0, apy=500, healthy=true
+[34m2026-02-17T14:47:56Z [0m[36;1m[USER LOG][0m ✅ CompoundAdapter: balance=0, apy=450, healthy=true
+[34m2026-02-17T14:47:57Z [0m[36;1m[USER LOG][0m ✅ MorphoAdapter: balance=0, apy=800, healthy=true
+[34m2026-02-17T14:47:57Z [0m[36;1m[USER LOG][0m ✅ YieldMaxAdapter: balance=0, apy=1500, healthy=true
+[34m2026-02-17T14:47:57Z [0m[36;1m[USER LOG][0m ──────────────────────────────────────────────────
+[34m2026-02-17T14:47:57Z [0m[36;1m[USER LOG][0m 📡 Chain: ethereum-testnet-sepolia-base-1
+[34m2026-02-17T14:47:57Z [0m[36;1m[USER LOG][0m Adapters: none
+[34m2026-02-17T14:47:57Z [0m[36;1m[USER LOG][0m ChainReads used: 15/15
+[34m2026-02-17T14:47:57Z [0m[36;1m[USER LOG][0m ──────────────────────────────────────────────────
+[34m2026-02-17T14:47:57Z [0m[36;1m[USER LOG][0m 📊 Total ChainReads used: 15/15
+[34m2026-02-17T14:47:57Z [0m[36;1m[USER LOG][0m ============================================================
+[34m2026-02-17T14:47:57Z [0m[36;1m[USER LOG][0m 🔍 Risk Assessment — ethereum-testnet-sepolia-arbitrum-1
+[34m2026-02-17T14:47:57Z [0m[36;1m[USER LOG][0m Adapters: 4, Prices: ETH=$1974.84 BTC=$68274.40 USDC=$0.999950
+[34m2026-02-17T14:47:57Z [0m[36;1m[USER LOG][0m Fetching off-chain signals...
+[34m2026-02-17T14:47:57Z [0m[36;1m[USER LOG][0m Using primary protocol: AaveAdapter
+[34m2026-02-17T14:47:58Z [0m[36;1m[USER LOG][0m 📦 GitHub: issues=48, lastPush=531d
+[34m2026-02-17T14:47:58Z [0m[36;1m[USER LOG][0m 🔒 Security: honeypot=false, openSource=true, proxy=true
+[34m2026-02-17T14:47:58Z [0m[36;1m[USER LOG][0m 👛 TeamWallet: balance=0.0000ETH
+[34m2026-02-17T14:47:58Z [0m[36;1m[USER LOG][0m Recording TVL snapshot & fetching historical change...
+[34m2026-02-17T14:47:59Z [0m[36;1m[USER LOG][0m 📊 TVL History: change=-20.00% (from ~1hr ago)
+[34m2026-02-17T14:47:59Z [0m[36;1m[USER LOG][0m 📊 TVL: $0.80, change=-20.00%
+[34m2026-02-17T14:47:59Z [0m[36;1m[USER LOG][0m Computing risk scores...
+[34m2026-02-17T14:47:59Z [0m[36;1m[USER LOG][0m AaveAdapter: score=20/100,
+[34m2026-02-17T14:47:59Z [0m[36;1m[USER LOG][0m CompoundAdapter: score=20/100,
+[34m2026-02-17T14:47:59Z [0m[36;1m[USER LOG][0m MorphoAdapter: score=20/100,
+[34m2026-02-17T14:47:59Z [0m[36;1m[USER LOG][0m YieldMaxAdapter: score=20/100,
+[34m2026-02-17T14:47:59Z [0m[36;1m[USER LOG][0m Running anomaly detection...
+[34m2026-02-17T14:47:59Z [0m[36;1m[USER LOG][0m Anomalies detected: 4
+[34m2026-02-17T14:47:59Z [0m[36;1m[USER LOG][0m [WARNING] TVL_DROP: TVL dropped -20.0% — significant outflow
+[34m2026-02-17T14:47:59Z [0m[36;1m[USER LOG][0m [WARNING] TVL_DROP: TVL dropped -20.0% — significant outflow
+[34m2026-02-17T14:47:59Z [0m[36;1m[USER LOG][0m [WARNING] TVL_DROP: TVL dropped -20.0% — significant outflow
+[34m2026-02-17T14:47:59Z [0m[36;1m[USER LOG][0m [WARNING] TVL_DROP: TVL dropped -20.0% — significant outflow
+
+Workflow Simulation Result:
+ "{\"status\":\"monitoring_complete\",\"timestamp\":1771314479277,\"chainReadsUsed\":15,\"results\":[{\"chain\":\"ethereum-testnet-sepolia-arbitrum-1\",\"chainsMonitored\":[\"ethereum-testnet-sepolia\",\"ethereum-testnet-sepolia-arbitrum-1\",\"ethereum-testnet-sepolia-base-1\"],\"chainReadsUsed\":15,\"crossChainPricesUsed\":[],\"adapters\":[{\"name\":\"AaveAdapter\",\"balance\":\"0\",\"apy\":\"500\",\"isHealthy\":true},{\"name\":\"CompoundAdapter\",\"balance\":\"0\",\"apy\":\"450\",\"isHealthy\":true},{\"name\":\"MorphoAdapter\",\"balance\":\"0\",\"apy\":\"800\",\"isHealthy\":true},{\"name\":\"YieldMaxAdapter\",\"balance\":\"0\",\"apy\":\"1500\",\"isHealthy\":true}],\"riskScores\":{\"AaveAdapter\":{\"score\":20,\"level\":\"SAFE\"},\"CompoundAdapter\":{\"score\":20,\"level\":\"SAFE\"},\"MorphoAdapter\":{\"score\":20,\"level\":\"SAFE\"},\"YieldMaxAdapter\":{\"score\":20,\"level\":\"SAFE\"}},\"anomalies\":[{\"type\":\"TVL_DROP\",\"severity\":\"WARNING\",\"adapter\":\"AaveAdapter\",\"message\":\"TVL dropped -20.0% — significant outflow\"},{\"type\":\"TVL_DROP\",\"severity\":\"WARNING\",\"adapter\":\"CompoundAdapter\",\"message\":\"TVL dropped -20.0% — significant outflow\"},{\"type\":\"TVL_DROP\",\"severity\":\"WARNING\",\"adapter\":\"MorphoAdapter\",\"message\":\"TVL dropped -20.0% — significant outflow\"},{\"type\":\"TVL_DROP\",\"severity\":\"WARNING\",\"adapter\":\"YieldMaxAdapter\",\"message\":\"TVL dropped -20.0% — significant outflow\"}],\"highestSeverity\":\"WARNING\"}]}"
+
+[34m2026-02-17T14:47:59Z [0m[36;1m[SIMULATION][0m Execution finished signal received
+[34m2026-02-17T14:47:59Z [0m[36;1m[SIMULATION][0m Skipping WorkflowEngineV2
+
+⚠️  Update available! You’re running 1.0.10, but 1.0.11 is the latest.
+Run `cre update` or visit https://github.com/smartcontractkit/cre-cli/releases to upgrade.
+

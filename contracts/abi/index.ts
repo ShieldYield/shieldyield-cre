@@ -8,5 +8,6 @@ import { AaveAdapter } from "./AaveAdapter";
 import { CompoundAdapter } from "./CompoundAdapter";
 import { MorphoAdapter } from "./MorphoAdapter";
 import { YieldMaxAdapter } from "./YieldMaxAdapter";
+import { AggregatorV3 } from "./AggregatorV3";
 
-export { BaseAdapter, RiskRegistry, ShieldVault, ShieldBridge, MockUSDC, Faucet, AaveAdapter, CompoundAdapter, MorphoAdapter, YieldMaxAdapter };
+export { BaseAdapter, RiskRegistry, ShieldVault, ShieldBridge, MockUSDC, Faucet, AaveAdapter, CompoundAdapter, MorphoAdapter, YieldMaxAdapter, AggregatorV3 };

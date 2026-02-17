@@ -138,27 +138,38 @@ export function readAllAdapters(
     runtime: Runtime<any>,
     chainName: string,
     addresses: {
-        aaveAdapter: string;
-        compoundAdapter: string;
-        morphoAdapter: string;
-        yieldMaxAdapter: string;
+        aaveAdapter?: string;
+        compoundAdapter?: string;
+        morphoAdapter?: string;
+        yieldMaxAdapter?: string;
     }
 ): AdapterSnapshot[] {
     const evmClient = createEvmClient(chainName);
 
-    const adapterConfigs = [
+    const allAdapterConfigs = [
         { name: "AaveAdapter", address: addresses.aaveAdapter, abi: AaveAdapter },
         { name: "CompoundAdapter", address: addresses.compoundAdapter, abi: CompoundAdapter },
         { name: "MorphoAdapter", address: addresses.morphoAdapter, abi: MorphoAdapter },
         { name: "YieldMaxAdapter", address: addresses.yieldMaxAdapter, abi: YieldMaxAdapter },
     ];
 
+    // Filter out adapters without addresses (supports multi-chain partial deployments)
+    const adapterConfigs = allAdapterConfigs.filter(
+        (cfg) => cfg.address && cfg.address.length > 0
+    );
+
+    if (adapterConfigs.length === 0) {
+        runtime.log(`⏭️ No adapters configured on ${chainName}`);
+        return [];
+    }
+
+    runtime.log(`Reading ${adapterConfigs.length} adapters on ${chainName}...`);
     const snapshots: AdapterSnapshot[] = [];
 
     for (const cfg of adapterConfigs) {
         try {
             const snapshot = readAdapterSnapshot(
-                runtime, evmClient, cfg.name, cfg.address, cfg.abi
+                runtime, evmClient, cfg.name, cfg.address!, cfg.abi
             );
             snapshots.push(snapshot);
             runtime.log(

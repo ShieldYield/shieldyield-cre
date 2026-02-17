@@ -37,7 +37,7 @@ const initWorkflow = (config: Config) => {
 
   // Log trigger: listen for RiskScoreUpdated events on RiskRegistry
   const riskUpdateTrigger = evmClient.logTrigger({
-    addresses: [toHex(toBytes(addresses.riskRegistry as Address, { size: 20 }))],
+    addresses: [toHex(toBytes(addresses.riskRegistry! as Address, { size: 20 }))],
     topics: [{ values: [RISK_SCORE_UPDATED_SIG] }],
   });
 

@@ -73,7 +73,7 @@ export const onShieldTrigger = (runtime: Runtime<Config>, triggerEvent: any): st
         const result = executeWarningProtocol(
             runtime,
             evm.chainName,
-            addresses.shieldVault,
+            addresses.shieldVault!,
             protocolAddress,
             `ShieldYield WARNING: Risk score ${newScore}/100 detected. Partial withdrawal to protect funds.`,
             shieldConfig
@@ -93,7 +93,7 @@ export const onShieldTrigger = (runtime: Runtime<Config>, triggerEvent: any): st
         const result = executeCriticalProtocol(
             runtime,
             evm.chainName,
-            addresses.shieldVault,
+            addresses.shieldVault!,
             protocolAddress,
             `ShieldYield CRITICAL: Risk score ${newScore}/100. Emergency withdrawal to protect all funds.`
         );

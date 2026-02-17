@@ -7,26 +7,27 @@ import {
     toBytes,
 } from "viem";
 
-import type { ShieldConfig, OffchainApisConfig, DataStreamsConfig } from "../monitors/types";
+import type { ShieldConfig, OffchainApisConfig, PriceFeedsConfig } from "../monitors/types";
 
 // ========================================
 // TYPE DEFINITIONS
 // ========================================
 
 export type Addresses = {
-    mockUSDC: string;
-    faucet: string;
-    riskRegistry: string;
-    shieldVault: string;
-    shieldBridge: string;
-    aaveAdapter: string;
-    compoundAdapter: string;
-    morphoAdapter: string;
-    yieldMaxAdapter: string;
+    mockUSDC?: string;
+    faucet?: string;
+    riskRegistry?: string;
+    shieldVault?: string;
+    shieldBridge?: string;
+    aaveAdapter?: string;
+    compoundAdapter?: string;
+    morphoAdapter?: string;
+    yieldMaxAdapter?: string;
 };
 
 export type EvmConfig = {
     chainName: string;
+    priceFeeds?: PriceFeedsConfig;
     addresses: Addresses[];
 };
 
@@ -34,7 +35,7 @@ export type Config = {
     schedule: string;
     evms: EvmConfig[];
     offchainApis: OffchainApisConfig;
-    dataStreams: DataStreamsConfig;
+    priceFeeds: PriceFeedsConfig;
     shieldConfig: ShieldConfig;
 };
 

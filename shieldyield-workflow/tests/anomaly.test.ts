@@ -30,6 +30,7 @@ function makeHealthyAdapter(name = "TestAdapter"): AdapterSnapshot {
 function makeSafeOffchain(): OffchainSignals {
     return {
         prices: { ethUsd: 2500, btcUsd: 45000, usdcUsd: 1.0 },
+        tvl: { currentTvl: 5_000_000, tvlChangePercent: 2.5 },
         github: { recentCommits: 15, openIssues: 3, lastPushDaysAgo: 2 },
         security: {
             isHoneypot: false,
@@ -74,13 +75,21 @@ function runTests() {
     const safeAnomalies = detectAnomalies(makeHealthyAdapter(), makeSafeOffchain());
     assert(safeAnomalies.length === 0, `Expected 0 anomalies, got ${safeAnomalies.length}`);
 
-    // ---- Test 2: TVL Drop detection (DISABLED — requires historical price tracking) ----
-    console.log("\nTest 2: TVL Drop detection — DISABLED (skipped)");
-    assert(true, "TVL_DROP detection disabled — requires Data Streams historical price tracking");
+    // ---- Test 2: TVL Drop detection ----
+    console.log("\nTest 2: TVL Drop detection (>10% drop)");
+    const tvlDropOffchain = makeSafeOffchain();
+    tvlDropOffchain.tvl = { currentTvl: 4_000_000, tvlChangePercent: -15 };
+    const tvlDropAnomalies = detectAnomalies(makeHealthyAdapter(), tvlDropOffchain);
+    assert(tvlDropAnomalies.some((a) => a.type === "TVL_DROP"), "Should detect TVL_DROP");
+    assert(tvlDropAnomalies.some((a) => a.severity === "WARNING"), "TVL_DROP should be WARNING");
 
-    // ---- Test 3: BANK_RUN detection (DISABLED — requires historical price tracking) ----
-    console.log("\nTest 3: BANK_RUN detection — DISABLED (skipped)");
-    assert(true, "BANK_RUN detection disabled — requires Data Streams historical price tracking");
+    // ---- Test 3: BANK_RUN detection ----
+    console.log("\nTest 3: BANK_RUN detection (>20% drop)");
+    const bankRunOffchain = makeSafeOffchain();
+    bankRunOffchain.tvl = { currentTvl: 2_000_000, tvlChangePercent: -30 };
+    const bankRunAnomalies = detectAnomalies(makeHealthyAdapter(), bankRunOffchain);
+    assert(bankRunAnomalies.some((a) => a.type === "BANK_RUN"), "Should detect BANK_RUN");
+    assert(bankRunAnomalies.some((a) => a.severity === "CRITICAL"), "BANK_RUN should be CRITICAL");
 
     // ---- Test 4: Honeypot detected ----
     console.log("\nTest 4: Honeypot detected");

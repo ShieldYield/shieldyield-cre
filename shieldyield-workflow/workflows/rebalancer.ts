@@ -104,7 +104,7 @@ export const onRebalanceTrigger = (runtime: Runtime<Config>, triggerEvent: any):
             addresses.compoundAdapter,
             addresses.morphoAdapter,
             addresses.yieldMaxAdapter,
-        ];
+        ].filter((addr): addr is string => !!addr);
 
         const riskInfo: AdapterRiskInfo[] = [];
         for (const addr of adapterAddresses) {
@@ -119,7 +119,7 @@ export const onRebalanceTrigger = (runtime: Runtime<Config>, triggerEvent: any):
                     .callContract(runtime, {
                         call: encodeCallMsg({
                             from: zeroAddress,
-                            to: addresses.riskRegistry as Address,
+                            to: addresses.riskRegistry! as Address,
                             data: callData,
                         }),
                         blockNumber: LAST_FINALIZED_BLOCK_NUMBER,
@@ -169,7 +169,7 @@ export const onRebalanceTrigger = (runtime: Runtime<Config>, triggerEvent: any):
 
                 evmClient
                     .writeReport(runtime, {
-                        receiver: addresses.shieldVault,
+                        receiver: addresses.shieldVault!,
                         report: new Report({ rawReport: updateData }),
                     })
                     .result();
@@ -183,7 +183,7 @@ export const onRebalanceTrigger = (runtime: Runtime<Config>, triggerEvent: any):
 
             evmClient
                 .writeReport(runtime, {
-                    receiver: addresses.shieldVault,
+                    receiver: addresses.shieldVault!,
                     report: new Report({ rawReport: rebalanceData }),
                 })
                 .result();

@@ -2,6 +2,17 @@
   "schedule": "*/30 * * * * *",
   "evms": [
     {
+      "chainName": "ethereum-testnet-sepolia",
+      "priceFeeds": {
+        "ETH_USD": "0x694AA1769357215DE4FAC081bf1f309aDC325306",
+        "BTC_USD": "0x1b44F3514812d835EB1BDB0acB33d3fA3351Ee43",
+        "USDC_USD": "0xA2F78ab2355fe2f984D808B5CeE7FD0A93D5270E"
+      },
+      "addresses": [
+        {}
+      ]
+    },
+    {
       "chainName": "ethereum-testnet-sepolia-arbitrum-1",
       "addresses": [
         {
@@ -16,10 +27,21 @@
           "yieldMaxAdapter": "0x5EbD6F3DA76C2B9C9d6aAC89DA08c388EaB2B3cb"
         }
       ]
+    },
+    {
+      "chainName": "ethereum-testnet-sepolia-base-1",
+      "priceFeeds": {
+        "ETH_USD": "0x4aDC67D868764f927053CCF1d0d75aa3a19A3618",
+        "BTC_USD": "0x0FB99723Aee6f420beAD13e6bBB79b7E6F034298",
+        "USDC_USD": "0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165"
+      },
+      "addresses": [
+        {}
+      ]
     }
   ],
   "offchainApis": {
-    "priceProxyUrl": "http://localhost:3000/api/price",
+    "tvlHistoryUrl": "http://localhost:3000/api/tvl-history",
     "primaryProtocol": "AaveAdapter",
     "goPlusChainId": "42161",
     "adapters": {
@@ -49,14 +71,10 @@
       }
     }
   },
-  "dataStreams": {
-    "apiKey": "${DATA_STREAMS_API_KEY}",
-    "apiSecret": "${DATA_STREAMS_API_SECRET}",
-    "feeds": {
-      "ETH_USD": "0x000359843a543ee2fe414dc14c7e7920ef10f4372990b79d6361cdc0dd1ba782",
-      "BTC_USD": "0x00037da06d56d083fe599397a4769a042d63aa73dc4ef57709d31e9971a5b439",
-      "USDC_USD": "0x00036fe43f87884450b4c7e093cd5ed99cac6640d8c2000e6afc02c8838d0265"
-    }
+  "priceFeeds": {
+    "ETH_USD": "0x694AA1769357215DE4FAC081bf1f309aDC325306",
+    "BTC_USD": "0x1b44F3514812d835EB1BDB0acB33d3fA3351Ee43",
+    "USDC_USD": "0x0000000000000000000000000000000000000000"
   },
   "shieldConfig": {
     "warningWithdrawPercent": 3000,

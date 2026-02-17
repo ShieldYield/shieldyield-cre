@@ -50,9 +50,15 @@ export function computeRiskScore(
     // OFF-CHAIN SIGNALS (55%)
     // =============================================
 
-    // 4. TVL velocity — DISABLED (Data Streams integration in progress)
-    // TODO: Implement TVL calculation using historical balance * price data
-    // For now, skip TVL-based scoring (0% weight)
+    // 4. TVL velocity (15%) — historical TVL change from proxy
+    const tvlChange = offchain.tvl.tvlChangePercent;
+    if (tvlChange < -20) {
+        score += 15; // Severe drop → full weight
+    } else if (tvlChange < -10) {
+        score += 10; // Significant drop
+    } else if (tvlChange < -5) {
+        score += 5;  // Moderate drop
+    }
 
     // 5. Security flags — GoPlus (15%)
     if (offchain.security.isHoneypot) {

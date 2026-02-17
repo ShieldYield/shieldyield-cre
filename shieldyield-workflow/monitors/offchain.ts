@@ -10,51 +10,75 @@ import {
 } from "@chainlink/cre-sdk";
 
 import type {
-    PriceSignal,
     GithubSignal,
     SecuritySignal,
     TeamWalletSignal,
     OffchainSignals,
+    TvlSignal,
 } from "./types";
 
 // ========================================
-// FUNGSI 1: Fetch Price Data via Next.js Proxy
+// FUNGSI 0: Fetch TVL History — Next.js Proxy
 // ========================================
-// The Next.js proxy handles Chainlink Data Streams HMAC auth
-// and returns clean JSON: { ethUsd, btcUsd, usdcUsd, timestamp }
-function fetchPriceProxy(
+// Records current TVL and returns historical change%.
+// Uses GET with query params so CRE DON consensus works (idempotent).
+function fetchTvlHistoryData(
     sendRequester: HTTPSendRequester,
-    proxyUrl: string
-): PriceSignal {
+    url: string
+): TvlSignal {
     try {
         const resp = sendRequester
             .sendRequest({
-                url: proxyUrl,
+                url,
                 method: "GET" as const,
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
                 timeout: "8s",
             })
             .result();
 
         if (!ok(resp)) {
-            return { ethUsd: 0, btcUsd: 0, usdcUsd: 1.0 };
+            return { currentTvl: 0, tvlChangePercent: 0 };
         }
 
         const data = json(resp) as any;
         return {
-            ethUsd: Number(data.ethUsd) || 0,
-            btcUsd: Number(data.btcUsd) || 0,
-            usdcUsd: Number(data.usdcUsd) || 1.0,
+            currentTvl: Number(data.currentTvl) || 0,
+            tvlChangePercent: Number(data.tvlChangePercent) || 0,
         };
     } catch {
-        return { ethUsd: 0, btcUsd: 0, usdcUsd: 1.0 };
+        return { currentTvl: 0, tvlChangePercent: 0 };
     }
 }
 
+/**
+ * Records current TVL to the history endpoint and returns
+ * the historical TVL change% (compared against ~1hr-old snapshot).
+ */
+export function fetchTvlHistory(
+    runtime: Runtime<any>,
+    tvlHistoryUrl: string,
+    currentTvl: number,
+    timestamp: number
+): TvlSignal {
+    const httpClient = new HTTPClient();
+    const url = `${tvlHistoryUrl}?tvl=${currentTvl.toFixed(2)}&ts=${timestamp}`;
+
+    const result = httpClient
+        .sendRequest(
+            runtime,
+            fetchTvlHistoryData,
+            ConsensusAggregationByFields<TvlSignal>({
+                currentTvl: median,
+                tvlChangePercent: median,
+            })
+        )(url)
+        .result();
+
+    return result;
+}
+
 // ========================================
-// FUNGSI 2: Fetch GitHub Activity
+// FUNGSI 1: Fetch GitHub Activity
 // ========================================
 function fetchGitHubData(
     sendRequester: HTTPSendRequester,
@@ -178,37 +202,20 @@ function fetchTeamWalletData(
 }
 
 // ========================================
-// FUNGSI UTAMA: Fetch semua off-chain signals
+// FUNGSI UTAMA: Fetch semua off-chain signals (HTTP only)
 // ========================================
+// Prices are now read on-chain via Chainlink Price Feeds (see price-feeds.ts).
+// This function only handles the 3 HTTP calls: GitHub, GoPlus, Etherscan.
+// The caller (sentinel-scan) injects prices and TVL into the returned object.
 export function fetchAllOffchainSignals(
     runtime: Runtime<any>,
     config: {
-        priceProxyUrl: string;
         githubUrl: string;
         goPlusUrl: string;
         teamWalletUrl: string;
     }
-): OffchainSignals {
+): Omit<OffchainSignals, "prices" | "tvl"> {
     const httpClient = new HTTPClient();
-
-    // --- Chainlink Data Streams: Price feeds via Next.js Proxy ---
-    runtime.log("Fetching prices from Data Streams proxy...");
-
-    const prices = httpClient
-        .sendRequest(
-            runtime,
-            fetchPriceProxy,
-            ConsensusAggregationByFields<PriceSignal>({
-                ethUsd: median,
-                btcUsd: median,
-                usdcUsd: median,
-            })
-        )(config.priceProxyUrl)
-        .result();
-
-    runtime.log(
-        `📈 Data Streams: ETH=$${prices.ethUsd.toFixed(2)}, BTC=$${prices.btcUsd.toFixed(2)}, USDC=$${prices.usdcUsd.toFixed(6)}`
-    );
 
     // --- GitHub: Code Risk ---
     const github = httpClient
@@ -259,5 +266,5 @@ export function fetchAllOffchainSignals(
         `👛 TeamWallet: balance=${teamWallet.balanceEth.toFixed(4)}ETH`
     );
 
-    return { prices, github, security, teamWallet };
+    return { github, security, teamWallet };
 }
