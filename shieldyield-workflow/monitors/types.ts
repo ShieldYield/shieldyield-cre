@@ -65,9 +65,32 @@ export interface TeamWalletSignal {
     recentLargeOutflows: boolean;
 }
 
+// --- DeFi Protocol Metrics: Fetched via Next.js proxy (Phase 2) ---
+export interface AaveMetricsSignal {
+    totalSupplied: string;   // USDC amount
+    totalBorrowed: string;   // USDC amount
+    supplyApy: number;       // %
+    borrowApy: number;       // %
+    utilization: number;     // %
+}
+
+export interface CompoundMetricsSignal {
+    totalSupply: string;     // USDC amount
+    totalBorrow: string;     // USDC amount
+    utilization: number;     // %
+    supplyApr: number;       // %
+    borrowApr: number;       // %
+}
+
+export interface DefiMetricsSignal {
+    aave: AaveMetricsSignal | null;
+    compound: CompoundMetricsSignal | null;
+}
+
 export interface OffchainSignals {
     prices: PriceSignal;
     tvl: TvlSignal;
+    defiMetrics: DefiMetricsSignal;
     github: GithubSignal;
     security: SecuritySignal;
     teamWallet: TeamWalletSignal;
@@ -101,6 +124,8 @@ export interface AdapterApiConfig {
 export interface OffchainApisConfig {
     /** URL of the TVL history proxy for historical tracking */
     tvlHistoryUrl: string;
+    /** URL of the DeFi metrics proxy (AAVE/Compound lending data) */
+    defiMetricsUrl: string;
     /** Which adapter key to use as primary for off-chain fetching (HTTP limit: 5) */
     primaryProtocol: string;
     /** GoPlus chain ID (shared across adapters on same chain) */

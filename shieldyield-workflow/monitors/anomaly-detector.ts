@@ -12,7 +12,9 @@ export type AnomalyType =
     | "HONEYPOT"
     | "TEAM_EXIT"
     | "BALANCE_DRAIN"
-    | "APY_SPIKE";
+    | "APY_SPIKE"
+    | "HIGH_UTILIZATION"
+    | "LIQUIDITY_CRUNCH";
 
 export interface Anomaly {
     type: AnomalyType;
@@ -92,6 +94,31 @@ export function detectAnomalies(
             severity: "WARNING",
             adapter: adapter.name,
             message: `APY is ${adapter.apy} bps — suspiciously high`,
+        });
+    }
+
+    // --- DeFi Utilization Detection (Phase 2 metrics) ---
+    const util = adapter.name.includes("Aave")
+        ? offchain.defiMetrics?.aave?.utilization
+        : adapter.name.includes("Compound")
+            ? offchain.defiMetrics?.compound?.utilization
+            : undefined;
+
+    // Liquidity Crunch: Utilization > 95% (CRITICAL)
+    if (util !== undefined && util > 95) {
+        anomalies.push({
+            type: "LIQUIDITY_CRUNCH",
+            severity: "CRITICAL",
+            adapter: adapter.name,
+            message: `Protocol utilization at ${util.toFixed(1)}% — liquidity crunch imminent`,
+        });
+        // High Utilization: > 85% (WARNING)
+    } else if (util !== undefined && util > 85) {
+        anomalies.push({
+            type: "HIGH_UTILIZATION",
+            severity: "WARNING",
+            adapter: adapter.name,
+            message: `Protocol utilization at ${util.toFixed(1)}% — withdrawals may be delayed`,
         });
     }
 

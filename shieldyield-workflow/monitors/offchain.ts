@@ -15,6 +15,7 @@ import type {
     TeamWalletSignal,
     OffchainSignals,
     TvlSignal,
+    DefiMetricsSignal,
 } from "./types";
 
 // ========================================
@@ -214,7 +215,7 @@ export function fetchAllOffchainSignals(
         goPlusUrl: string;
         teamWalletUrl: string;
     }
-): Omit<OffchainSignals, "prices" | "tvl"> {
+): Omit<OffchainSignals, "prices" | "tvl" | "defiMetrics"> {
     const httpClient = new HTTPClient();
 
     // --- GitHub: Code Risk ---
@@ -267,4 +268,80 @@ export function fetchAllOffchainSignals(
     );
 
     return { github, security, teamWallet };
+}
+
+// ========================================
+// FUNGSI 5: Fetch DeFi Metrics — Next.js Proxy
+// ========================================
+// Fetches AAVE V3 and Compound V3 lending metrics from the
+// Next.js API proxy. Uses 1 HTTP call (budget: 5/5).
+
+function fetchDefiMetricsData(
+    sendRequester: HTTPSendRequester,
+    url: string
+): DefiMetricsSignal {
+    try {
+        const resp = sendRequester
+            .sendRequest({
+                url,
+                method: "GET" as const,
+                headers: { "Content-Type": "application/json" },
+                timeout: "8s",
+            })
+            .result();
+
+        if (!ok(resp)) {
+            return { aave: null, compound: null };
+        }
+
+        const data = json(resp) as any;
+        return {
+            aave: data.aave
+                ? {
+                    totalSupplied: String(data.aave.totalSupplied || "0"),
+                    totalBorrowed: String(data.aave.totalBorrowed || "0"),
+                    supplyApy: Number(data.aave.supplyApy) || 0,
+                    borrowApy: Number(data.aave.borrowApy) || 0,
+                    utilization: Number(data.aave.utilization) || 0,
+                }
+                : null,
+            compound: data.compound
+                ? {
+                    totalSupply: String(data.compound.totalSupply || "0"),
+                    totalBorrow: String(data.compound.totalBorrow || "0"),
+                    utilization: Number(data.compound.utilization) || 0,
+                    supplyApr: Number(data.compound.supplyApr) || 0,
+                    borrowApr: Number(data.compound.borrowApr) || 0,
+                }
+                : null,
+        };
+    } catch {
+        return { aave: null, compound: null };
+    }
+}
+
+/**
+ * Fetches DeFi lending metrics from the Next.js proxy.
+ * The proxy aggregates AAVE V3 and Compound V3 data via viem/RPC.
+ * Uses identical consensus because the endpoint has a 30s cache,
+ * ensuring all DON nodes receive the same response.
+ */
+export function fetchDefiMetrics(
+    runtime: Runtime<any>,
+    defiMetricsUrl: string
+): DefiMetricsSignal {
+    const httpClient = new HTTPClient();
+
+    const result = httpClient
+        .sendRequest(
+            runtime,
+            fetchDefiMetricsData,
+            ConsensusAggregationByFields<DefiMetricsSignal>({
+                aave: identical as any,
+                compound: identical as any,
+            })
+        )(defiMetricsUrl)
+        .result();
+
+    return result;
 }

@@ -16,7 +16,7 @@ import type {
  * - GitHub inactivity:     10% — Tidak ada commit >30 hari → +10
  * - Audit (open source):    5% — GoPlus is_open_source → +5
  * - Admin wallet outflow:   5% — Etherscan large outflows → +5
- * - Reserve:                5% — Future signals → +5
+ * - DeFi utilization:       5% — High protocol utilization → +5
  */
 export function computeRiskScore(
     adapter: AdapterSnapshot,
@@ -86,6 +86,23 @@ export function computeRiskScore(
     // 8. Admin wallet — Etherscan (5%)
     if (offchain.teamWallet.recentLargeOutflows) {
         score += 5;
+    }
+
+    // 9. DeFi Protocol Utilization (5%) — Phase 2 metrics
+    const metrics = offchain.defiMetrics;
+    if (metrics) {
+        // Match adapter name to its protocol metrics
+        const util = adapter.name.includes("Aave")
+            ? metrics.aave?.utilization
+            : adapter.name.includes("Compound")
+                ? metrics.compound?.utilization
+                : undefined;
+
+        if (util !== undefined) {
+            if (util > 95) score += 5;       // Near-full → max penalty
+            else if (util > 85) score += 3;  // Elevated risk
+            else if (util > 75) score += 1;  // Early warning
+        }
     }
 
     return Math.min(100, Math.max(0, score));

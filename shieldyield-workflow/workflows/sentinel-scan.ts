@@ -13,11 +13,12 @@ import {
     readSinglePriceFeed,
     fetchAllOffchainSignals,
     fetchTvlHistory,
+    fetchDefiMetrics,
     computeAllRiskScores,
     detectAllAnomalies,
     getHighestSeverity,
 } from "../monitors";
-import type { OffchainSignals, PriceSignal } from "../monitors";
+import type { OffchainSignals, PriceSignal, DefiMetricsSignal } from "../monitors";
 
 import { RiskRegistry } from "../../contracts/abi";
 import { createEvmClient, type Config } from "../types/config";
@@ -253,10 +254,29 @@ export const onCronTrigger = (runtime: Runtime<Config>): string => {
         runtime.log(`⚠️ TVL history unavailable, using fallback: ${err}`);
     }
 
+    // ---- Fetch DeFi Protocol Metrics (AAVE/Compound via Next.js proxy) ----
+    let defiMetrics: DefiMetricsSignal = { aave: null, compound: null };
+    try {
+        const defiMetricsUrl = apisConfig.defiMetricsUrl;
+        if (defiMetricsUrl) {
+            runtime.log("Fetching DeFi protocol metrics (AAVE/Compound)...");
+            defiMetrics = fetchDefiMetrics(runtime, defiMetricsUrl);
+            if (defiMetrics.aave) {
+                runtime.log(`📊 AAVE: supplyAPY=${defiMetrics.aave.supplyApy}%, borrowAPY=${defiMetrics.aave.borrowApy}%, util=${defiMetrics.aave.utilization}%`);
+            }
+            if (defiMetrics.compound) {
+                runtime.log(`📊 Compound: supplyAPR=${defiMetrics.compound.supplyApr}%, borrowAPR=${defiMetrics.compound.borrowApr}%, util=${defiMetrics.compound.utilization}%`);
+            }
+        }
+    } catch (err) {
+        runtime.log(`⚠️ DeFi metrics unavailable: ${err}`);
+    }
+
     // Assemble full OffchainSignals
     const offchain: OffchainSignals = {
         prices: primaryChainPrices,
         tvl: { currentTvl, tvlChangePercent },
+        defiMetrics,
         ...httpSignals,
     };
     runtime.log(`📊 TVL: $${currentTvl.toFixed(2)}, change=${tvlChangePercent.toFixed(2)}%`);

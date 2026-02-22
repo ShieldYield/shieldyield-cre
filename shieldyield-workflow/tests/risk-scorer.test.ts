@@ -50,6 +50,7 @@ function makeSafeOffchain(): OffchainSignals {
     return {
         prices: { ethUsd: 2500, btcUsd: 45000, usdcUsd: 1.0 },
         tvl: { currentTvl: 5_000_000_000, tvlChangePercent: 2.5 },
+        defiMetrics: { aave: null, compound: null },
         github: { recentCommits: 15, openIssues: 3, lastPushDaysAgo: 2 },
         security: {
             isHoneypot: false,
@@ -66,6 +67,7 @@ function makeEmergingRiskOffchain(): OffchainSignals {
     return {
         prices: { ethUsd: 2500, btcUsd: 45000, usdcUsd: 1.0 },
         tvl: { currentTvl: 3_000_000_000, tvlChangePercent: -8 },
+        defiMetrics: { aave: null, compound: null },
         github: { recentCommits: 0, openIssues: 12, lastPushDaysAgo: 20 },
         security: {
             isHoneypot: false,
@@ -82,6 +84,7 @@ function makeCriticalOffchain(): OffchainSignals {
     return {
         prices: { ethUsd: 2500, btcUsd: 45000, usdcUsd: 1.0 },
         tvl: { currentTvl: 500_000, tvlChangePercent: -35 },
+        defiMetrics: { aave: null, compound: null },
         github: { recentCommits: 0, openIssues: 100, lastPushDaysAgo: 90 },
         security: {
             isHoneypot: true,     // HONEYPOT!
@@ -156,6 +159,33 @@ function runTests() {
         getThreatLevelLabel(criticalScore) === "CRITICAL",
         `Threat level should be CRITICAL, got ${getThreatLevelLabel(criticalScore)}`
     );
+
+    // ---- Scenario D: Overleveraged Protocol (DeFi Metrics) ----
+    console.log("\n📙 Scenario D: Overleveraged AAVE Protocol");
+    console.log("   Healthy adapter but AAVE utilization at 96%");
+    const overleveragedOffchain = makeSafeOffchain();
+    overleveragedOffchain.defiMetrics = {
+        aave: {
+            totalSupplied: "50000000",
+            totalBorrowed: "48000000",
+            supplyApy: 8.5,
+            borrowApy: 12.3,
+            utilization: 96,
+        },
+        compound: null,
+    };
+    const overleveragedScore = computeRiskScore(
+        makeHealthyAdapter("AaveAdapter"), undefined, overleveragedOffchain
+    );
+    console.log(`   → Computed Score: ${overleveragedScore}`);
+    assert(overleveragedScore > 0, `Overleveraged Aave should have score > 0, got ${overleveragedScore}`);
+    assert(overleveragedScore >= 5, `Overleveraged Aave (96% util) should get +5 penalty, got ${overleveragedScore}`);
+
+    // Verify Morpho adapter is NOT penalized by AAVE utilization
+    const morphoScore = computeRiskScore(
+        makeHealthyAdapter("MorphoAdapter"), undefined, overleveragedOffchain
+    );
+    assert(morphoScore === 0, `MorphoAdapter should NOT be penalized by AAVE util, got ${morphoScore}`);
 
     // ---- Edge Case: Score capped at 100 ----
     console.log("\n🔧 Edge Case: Score bounds");

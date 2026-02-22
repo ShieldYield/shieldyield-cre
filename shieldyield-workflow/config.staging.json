@@ -42,6 +42,7 @@
   ],
   "offchainApis": {
     "tvlHistoryUrl": "http://localhost:3000/api/tvl-history",
+    "defiMetricsUrl": "http://localhost:3000/api/defi-metrics",
     "primaryProtocol": "AaveAdapter",
     "goPlusChainId": "42161",
     "adapters": {

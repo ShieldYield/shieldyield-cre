@@ -31,6 +31,7 @@ function makeSafeOffchain(): OffchainSignals {
     return {
         prices: { ethUsd: 2500, btcUsd: 45000, usdcUsd: 1.0 },
         tvl: { currentTvl: 5_000_000, tvlChangePercent: 2.5 },
+        defiMetrics: { aave: null, compound: null },
         github: { recentCommits: 15, openIssues: 3, lastPushDaysAgo: 2 },
         security: {
             isHoneypot: false,
@@ -172,6 +173,46 @@ function runTests() {
         ]) === "WATCH",
         "Single WATCH → WATCH"
     );
+
+    // ---- Test 12: HIGH_UTILIZATION detection (90% Aave utilization) ----
+    console.log("\nTest 12: HIGH_UTILIZATION detection (AaveAdapter + 90% util)");
+    const highUtilOffchain = makeSafeOffchain();
+    highUtilOffchain.defiMetrics = {
+        aave: {
+            totalSupplied: "50000000",
+            totalBorrowed: "45000000",
+            supplyApy: 7.2,
+            borrowApy: 10.1,
+            utilization: 90,
+        },
+        compound: null,
+    };
+    const highUtilAnomalies = detectAnomalies(
+        { ...makeHealthyAdapter("AaveAdapter"), name: "AaveAdapter" },
+        highUtilOffchain
+    );
+    assert(highUtilAnomalies.some((a) => a.type === "HIGH_UTILIZATION"), "Should detect HIGH_UTILIZATION");
+    assert(highUtilAnomalies.some((a) => a.severity === "WARNING"), "HIGH_UTILIZATION should be WARNING");
+
+    // ---- Test 13: LIQUIDITY_CRUNCH detection (98% Compound utilization) ----
+    console.log("\nTest 13: LIQUIDITY_CRUNCH detection (CompoundAdapter + 98% util)");
+    const crunchOffchain = makeSafeOffchain();
+    crunchOffchain.defiMetrics = {
+        aave: null,
+        compound: {
+            totalSupply: "80000000",
+            totalBorrow: "78400000",
+            utilization: 98,
+            supplyApr: 15.3,
+            borrowApr: 22.7,
+        },
+    };
+    const crunchAnomalies = detectAnomalies(
+        { ...makeHealthyAdapter("CompoundAdapter"), name: "CompoundAdapter" },
+        crunchOffchain
+    );
+    assert(crunchAnomalies.some((a) => a.type === "LIQUIDITY_CRUNCH"), "Should detect LIQUIDITY_CRUNCH");
+    assert(crunchAnomalies.some((a) => a.severity === "CRITICAL"), "LIQUIDITY_CRUNCH should be CRITICAL");
 
     // ---- Summary ----
     console.log("\n" + "=".repeat(55));
