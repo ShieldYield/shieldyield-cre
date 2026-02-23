@@ -87,6 +87,15 @@ export interface DefiMetricsSignal {
     compound: CompoundMetricsSignal | null;
 }
 
+// --- AI Sentinel: GroqAI + GitHub + News analysis ---
+export interface AiSentinelSignal {
+    ai_threat_score: number;     // 0-100
+    confidence: number;          // 0-1
+    reasoning: string;
+    recommendation: string;      // "HOLD" | "REDUCE" | "EXIT"
+    signals: Array<{ source: string; signal: string; sentiment: string }>;
+}
+
 export interface OffchainSignals {
     prices: PriceSignal;
     tvl: TvlSignal;
@@ -94,6 +103,7 @@ export interface OffchainSignals {
     github: GithubSignal;
     security: SecuritySignal;
     teamWallet: TeamWalletSignal;
+    aiSentinel: AiSentinelSignal | null;
 }
 
 /**
@@ -122,6 +132,8 @@ export interface AdapterApiConfig {
  * Off-chain APIs configuration with per-adapter support
  */
 export interface OffchainApisConfig {
+    /** URL of the AI Sentinel proxy (GroqAI + GitHub + News) */
+    aiSentinelUrl: string;
     /** URL of the TVL history proxy for historical tracking */
     tvlHistoryUrl: string;
     /** URL of the DeFi metrics proxy (AAVE/Compound lending data) */

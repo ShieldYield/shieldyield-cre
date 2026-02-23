@@ -25,10 +25,16 @@ staging-settings:
     
 
 # ==========================================================================
+# production-settings:
+#   user-workflow:
+#     workflow-name: "shieldyield-workflow-production"
+#   workflow-artifacts:
+#     workflow-path: "./main.ts"
+#     config-path: "./config.production.json"
+#     secrets-path: ""
 production-settings:
   user-workflow:
-    workflow-name: "shieldyield-workflow-production"
+    workflow-name: "shieldyield-sentinel"
   workflow-artifacts:
     workflow-path: "./main.ts"
     config-path: "./config.production.json"
-    secrets-path: ""

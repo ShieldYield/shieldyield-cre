@@ -215,7 +215,8 @@ export const onCronTrigger = (runtime: Runtime<Config>): string => {
 
     runtime.log(`Using primary protocol: ${apisConfig.primaryProtocol}`);
     const httpSignals = fetchAllOffchainSignals(runtime, {
-        githubUrl: primaryAdapter.github,
+        aiSentinelUrl: apisConfig.aiSentinelUrl,
+        primaryProtocol: apisConfig.primaryProtocol,
         goPlusUrl,
         teamWalletUrl,
     });
@@ -357,6 +358,7 @@ export const onCronTrigger = (runtime: Runtime<Config>): string => {
             runtime.log(`Failed to write risk scores on-chain: ${err}`);
         }
     }
+
 
     allResults.push({
         chain: primaryChainName,

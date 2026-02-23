@@ -14,7 +14,8 @@ export type AnomalyType =
     | "BALANCE_DRAIN"
     | "APY_SPIKE"
     | "HIGH_UTILIZATION"
-    | "LIQUIDITY_CRUNCH";
+    | "LIQUIDITY_CRUNCH"
+    | "AI_THREAT_DETECTED";
 
 export interface Anomaly {
     type: AnomalyType;
@@ -119,6 +120,20 @@ export function detectAnomalies(
             severity: "WARNING",
             adapter: adapter.name,
             message: `Protocol utilization at ${util.toFixed(1)}% — withdrawals may be delayed`,
+        });
+    }
+
+    // --- AI Threat Detection (WARNING — never CRITICAL from AI alone) ---
+    if (
+        offchain.aiSentinel &&
+        offchain.aiSentinel.ai_threat_score > 70 &&
+        offchain.aiSentinel.confidence > 0.7
+    ) {
+        anomalies.push({
+            type: "AI_THREAT_DETECTED",
+            severity: "WARNING",
+            adapter: adapter.name,
+            message: `AI detected threat (score ${offchain.aiSentinel.ai_threat_score}): ${offchain.aiSentinel.reasoning.slice(0, 100)}`,
         });
     }
 

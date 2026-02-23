@@ -41,6 +41,7 @@ function makeSafeOffchain(): OffchainSignals {
             isMintable: false,
         },
         teamWallet: { balanceEth: 10, recentLargeOutflows: false },
+        aiSentinel: null,
     };
 }
 
@@ -213,6 +214,55 @@ function runTests() {
     );
     assert(crunchAnomalies.some((a) => a.type === "LIQUIDITY_CRUNCH"), "Should detect LIQUIDITY_CRUNCH");
     assert(crunchAnomalies.some((a) => a.severity === "CRITICAL"), "LIQUIDITY_CRUNCH should be CRITICAL");
+
+    // ---- Test 14: AI_THREAT_DETECTED at score > 70 + confidence > 0.7 ----
+    console.log("\nTest 14: AI_THREAT_DETECTED (score=85, confidence=0.9)");
+    const aiThreatOffchain = makeSafeOffchain();
+    aiThreatOffchain.aiSentinel = {
+        ai_threat_score: 85,
+        confidence: 0.9,
+        reasoning: "Critical vulnerability detected in protocol smart contract",
+        recommendation: "EXIT",
+        signals: [{ source: "news", signal: "Exploit reported", sentiment: "negative" }],
+    };
+    const aiThreatAnomalies = detectAnomalies(makeHealthyAdapter(), aiThreatOffchain);
+    assert(aiThreatAnomalies.some((a) => a.type === "AI_THREAT_DETECTED"), "Should detect AI_THREAT_DETECTED");
+    assert(
+        aiThreatAnomalies.filter((a) => a.type === "AI_THREAT_DETECTED").every((a) => a.severity === "WARNING"),
+        "AI_THREAT_DETECTED severity should be WARNING (never CRITICAL from AI alone)"
+    );
+
+    // ---- Test 15: AI threat NOT detected when score < 70 ----
+    console.log("\nTest 15: No AI anomaly when score < 70");
+    const aiLowOffchain = makeSafeOffchain();
+    aiLowOffchain.aiSentinel = {
+        ai_threat_score: 50,
+        confidence: 0.9,
+        reasoning: "Moderate concerns but nothing critical",
+        recommendation: "HOLD",
+        signals: [],
+    };
+    const aiLowAnomalies = detectAnomalies(makeHealthyAdapter(), aiLowOffchain);
+    assert(!aiLowAnomalies.some((a) => a.type === "AI_THREAT_DETECTED"), "Should NOT detect AI_THREAT_DETECTED at score=50");
+
+    // ---- Test 16: AI threat NOT detected when confidence < 0.7 ----
+    console.log("\nTest 16: No AI anomaly when confidence < 0.7");
+    const aiLowConfidenceOffchain = makeSafeOffchain();
+    aiLowConfidenceOffchain.aiSentinel = {
+        ai_threat_score: 90,
+        confidence: 0.5,
+        reasoning: "High threat but low confidence",
+        recommendation: "REDUCE",
+        signals: [],
+    };
+    const aiLowConfAnomalies = detectAnomalies(makeHealthyAdapter(), aiLowConfidenceOffchain);
+    assert(!aiLowConfAnomalies.some((a) => a.type === "AI_THREAT_DETECTED"), "Should NOT detect AI_THREAT_DETECTED at confidence=0.5");
+
+    // ---- Test 17: No AI anomaly when aiSentinel is null ----
+    console.log("\nTest 17: No AI anomaly when aiSentinel is null");
+    const noAiOffchain = makeSafeOffchain();
+    const noAiAnomalies = detectAnomalies(makeHealthyAdapter(), noAiOffchain);
+    assert(!noAiAnomalies.some((a) => a.type === "AI_THREAT_DETECTED"), "Should NOT detect AI_THREAT_DETECTED when aiSentinel is null");
 
     // ---- Summary ----
     console.log("\n" + "=".repeat(55));

@@ -5019,23 +5019,6 @@ function fileDesc(b64, imports) {
   return reg.getFile(root.name);
 }
 var file_google_protobuf_timestamp = /* @__PURE__ */ fileDesc("Ch9nb29nbGUvcHJvdG9idWYvdGltZXN0YW1wLnByb3RvEg9nb29nbGUucHJvdG9idWYiKwoJVGltZXN0YW1wEg8KB3NlY29uZHMYASABKAMSDQoFbmFub3MYAiABKAVChQEKE2NvbS5nb29nbGUucHJvdG9idWZCDlRpbWVzdGFtcFByb3RvUAFaMmdvb2dsZS5nb2xhbmcub3JnL3Byb3RvYnVmL3R5cGVzL2tub3duL3RpbWVzdGFtcHBi+AEBogIDR1BCqgIeR29vZ2xlLlByb3RvYnVmLldlbGxLbm93blR5cGVzYgZwcm90bzM");
-var TimestampSchema = /* @__PURE__ */ messageDesc(file_google_protobuf_timestamp, 0);
-function timestampFromDate(date) {
-  return timestampFromMs(date.getTime());
-}
-function timestampDate(timestamp) {
-  return new Date(timestampMs(timestamp));
-}
-function timestampFromMs(timestampMs) {
-  const seconds = Math.floor(timestampMs / 1000);
-  return create(TimestampSchema, {
-    seconds: protoInt64.parse(seconds),
-    nanos: (timestampMs - seconds * 1000) * 1e6
-  });
-}
-function timestampMs(timestamp) {
-  return Number(timestamp.seconds) * 1000 + Math.round(timestamp.nanos / 1e6);
-}
 var file_google_protobuf_any = /* @__PURE__ */ fileDesc("Chlnb29nbGUvcHJvdG9idWYvYW55LnByb3RvEg9nb29nbGUucHJvdG9idWYiJgoDQW55EhAKCHR5cGVfdXJsGAEgASgJEg0KBXZhbHVlGAIgASgMQnYKE2NvbS5nb29nbGUucHJvdG9idWZCCEFueVByb3RvUAFaLGdvb2dsZS5nb2xhbmcub3JnL3Byb3RvYnVmL3R5cGVzL2tub3duL2FueXBiogIDR1BCqgIeR29vZ2xlLlByb3RvYnVmLldlbGxLbm93blR5cGVzYgZwcm90bzM");
 var AnySchema = /* @__PURE__ */ messageDesc(file_google_protobuf_any, 0);
 var LEGACY_REQUIRED2 = 3;
@@ -5218,34 +5201,8 @@ function anyPack(schema, message, into) {
   into.typeUrl = typeNameToUrl(message.$typeName);
   return ret ? into : undefined;
 }
-function anyIs(any, descOrTypeName) {
-  if (any.typeUrl === "") {
-    return false;
-  }
-  const want = typeof descOrTypeName == "string" ? descOrTypeName : descOrTypeName.typeName;
-  const got = typeUrlToName(any.typeUrl);
-  return want === got;
-}
-function anyUnpack(any, registryOrMessageDesc) {
-  if (any.typeUrl === "") {
-    return;
-  }
-  const desc = registryOrMessageDesc.kind == "message" ? registryOrMessageDesc : registryOrMessageDesc.getMessage(typeUrlToName(any.typeUrl));
-  if (!desc || !anyIs(any, desc)) {
-    return;
-  }
-  return fromBinary(desc, any.value);
-}
 function typeNameToUrl(name) {
   return `type.googleapis.com/${name}`;
-}
-function typeUrlToName(url) {
-  const slash = url.lastIndexOf("/");
-  const name = slash >= 0 ? url.substring(slash + 1) : url;
-  if (!name.length) {
-    throw new Error(`invalid type url: ${url}`);
-  }
-  return name;
 }
 var file_google_protobuf_duration = /* @__PURE__ */ fileDesc("Ch5nb29nbGUvcHJvdG9idWYvZHVyYXRpb24ucHJvdG8SD2dvb2dsZS5wcm90b2J1ZiIqCghEdXJhdGlvbhIPCgdzZWNvbmRzGAEgASgDEg0KBW5hbm9zGAIgASgFQoMBChNjb20uZ29vZ2xlLnByb3RvYnVmQg1EdXJhdGlvblByb3RvUAFaMWdvb2dsZS5nb2xhbmcub3JnL3Byb3RvYnVmL3R5cGVzL2tub3duL2R1cmF0aW9ucGL4AQGiAgNHUEKqAh5Hb29nbGUuUHJvdG9idWYuV2VsbEtub3duVHlwZXNiBnByb3RvMw");
 var file_google_protobuf_empty = /* @__PURE__ */ fileDesc("Chtnb29nbGUvcHJvdG9idWYvZW1wdHkucHJvdG8SD2dvb2dsZS5wcm90b2J1ZiIHCgVFbXB0eUJ9ChNjb20uZ29vZ2xlLnByb3RvYnVmQgpFbXB0eVByb3RvUAFaLmdvb2dsZS5nb2xhbmcub3JnL3Byb3RvYnVmL3R5cGVzL2tub3duL2VtcHR5cGL4AQGiAgNHUEKqAh5Hb29nbGUuUHJvdG9idWYuV2VsbEtub3duVHlwZXNiBnByb3RvMw");
@@ -5768,27 +5725,11 @@ function listValueFromJson(listValue, json) {
   }
 }
 var file_values_v1_values = /* @__PURE__ */ fileDesc("ChZ2YWx1ZXMvdjEvdmFsdWVzLnByb3RvEgl2YWx1ZXMudjEigQMKBVZhbHVlEhYKDHN0cmluZ192YWx1ZRgBIAEoCUgAEhQKCmJvb2xfdmFsdWUYAiABKAhIABIVCgtieXRlc192YWx1ZRgDIAEoDEgAEiMKCW1hcF92YWx1ZRgEIAEoCzIOLnZhbHVlcy52MS5NYXBIABIlCgpsaXN0X3ZhbHVlGAUgASgLMg8udmFsdWVzLnYxLkxpc3RIABIrCg1kZWNpbWFsX3ZhbHVlGAYgASgLMhIudmFsdWVzLnYxLkRlY2ltYWxIABIZCgtpbnQ2NF92YWx1ZRgHIAEoA0ICMABIABIpCgxiaWdpbnRfdmFsdWUYCSABKAsyES52YWx1ZXMudjEuQmlnSW50SAASMAoKdGltZV92YWx1ZRgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIABIXCg1mbG9hdDY0X3ZhbHVlGAsgASgBSAASGgoMdWludDY0X3ZhbHVlGAwgASgEQgIwAEgAQgcKBXZhbHVlSgQICBAJIisKBkJpZ0ludBIPCgdhYnNfdmFsGAEgASgMEhAKBHNpZ24YAiABKANCAjAAInIKA01hcBIqCgZmaWVsZHMYASADKAsyGi52YWx1ZXMudjEuTWFwLkZpZWxkc0VudHJ5Gj8KC0ZpZWxkc0VudHJ5EgsKA2tleRgBIAEoCRIfCgV2YWx1ZRgCIAEoCzIQLnZhbHVlcy52MS5WYWx1ZToCOAEiKAoETGlzdBIgCgZmaWVsZHMYAiADKAsyEC52YWx1ZXMudjEuVmFsdWUiQwoHRGVjaW1hbBImCgtjb2VmZmljaWVudBgBIAEoCzIRLnZhbHVlcy52MS5CaWdJbnQSEAoIZXhwb25lbnQYAiABKAVCYQoNY29tLnZhbHVlcy52MUILVmFsdWVzUHJvdG9QAaICA1ZYWKoCCVZhbHVlcy5WMcoCCVZhbHVlc1xWMeICFVZhbHVlc1xWMVxHUEJNZXRhZGF0YeoCClZhbHVlczo6VjFiBnByb3RvMw", [file_google_protobuf_timestamp]);
-var ValueSchema2 = /* @__PURE__ */ messageDesc(file_values_v1_values, 0);
-var BigIntSchema = /* @__PURE__ */ messageDesc(file_values_v1_values, 1);
-var MapSchema = /* @__PURE__ */ messageDesc(file_values_v1_values, 2);
-var ListSchema = /* @__PURE__ */ messageDesc(file_values_v1_values, 3);
-var DecimalSchema = /* @__PURE__ */ messageDesc(file_values_v1_values, 4);
 var file_sdk_v1alpha_sdk = /* @__PURE__ */ fileDesc("ChVzZGsvdjFhbHBoYS9zZGsucHJvdG8SC3Nkay52MWFscGhhIrQBChVTaW1wbGVDb25zZW5zdXNJbnB1dHMSIQoFdmFsdWUYASABKAsyEC52YWx1ZXMudjEuVmFsdWVIABIPCgVlcnJvchgCIAEoCUgAEjUKC2Rlc2NyaXB0b3JzGAMgASgLMiAuc2RrLnYxYWxwaGEuQ29uc2Vuc3VzRGVzY3JpcHRvchIhCgdkZWZhdWx0GAQgASgLMhAudmFsdWVzLnYxLlZhbHVlQg0KC29ic2VydmF0aW9uIpABCglGaWVsZHNNYXASMgoGZmllbGRzGAEgAygLMiIuc2RrLnYxYWxwaGEuRmllbGRzTWFwLkZpZWxkc0VudHJ5Gk8KC0ZpZWxkc0VudHJ5EgsKA2tleRgBIAEoCRIvCgV2YWx1ZRgCIAEoCzIgLnNkay52MWFscGhhLkNvbnNlbnN1c0Rlc2NyaXB0b3I6AjgBIoYBChNDb25zZW5zdXNEZXNjcmlwdG9yEjMKC2FnZ3JlZ2F0aW9uGAEgASgOMhwuc2RrLnYxYWxwaGEuQWdncmVnYXRpb25UeXBlSAASLAoKZmllbGRzX21hcBgCIAEoCzIWLnNkay52MWFscGhhLkZpZWxkc01hcEgAQgwKCmRlc2NyaXB0b3IiagoNUmVwb3J0UmVxdWVzdBIXCg9lbmNvZGVkX3BheWxvYWQYASABKAwSFAoMZW5jb2Rlcl9uYW1lGAIgASgJEhQKDHNpZ25pbmdfYWxnbxgDIAEoCRIUCgxoYXNoaW5nX2FsZ28YBCABKAkilwEKDlJlcG9ydFJlc3BvbnNlEhUKDWNvbmZpZ19kaWdlc3QYASABKAwSEgoGc2VxX25yGAIgASgEQgIwABIWCg5yZXBvcnRfY29udGV4dBgDIAEoDBISCgpyYXdfcmVwb3J0GAQgASgMEi4KBHNpZ3MYBSADKAsyIC5zZGsudjFhbHBoYS5BdHRyaWJ1dGVkU2lnbmF0dXJlIjsKE0F0dHJpYnV0ZWRTaWduYXR1cmUSEQoJc2lnbmF0dXJlGAEgASgMEhEKCXNpZ25lcl9pZBgCIAEoDSJrChFDYXBhYmlsaXR5UmVxdWVzdBIKCgJpZBgBIAEoCRIlCgdwYXlsb2FkGAIgASgLMhQuZ29vZ2xlLnByb3RvYnVmLkFueRIOCgZtZXRob2QYAyABKAkSEwoLY2FsbGJhY2tfaWQYBCABKAUiWgoSQ2FwYWJpbGl0eVJlc3BvbnNlEicKB3BheWxvYWQYASABKAsyFC5nb29nbGUucHJvdG9idWYuQW55SAASDwoFZXJyb3IYAiABKAlIAEIKCghyZXNwb25zZSJYChNUcmlnZ2VyU3Vic2NyaXB0aW9uEgoKAmlkGAEgASgJEiUKB3BheWxvYWQYAiABKAsyFC5nb29nbGUucHJvdG9idWYuQW55Eg4KBm1ldGhvZBgDIAEoCSJVChpUcmlnZ2VyU3Vic2NyaXB0aW9uUmVxdWVzdBI3Cg1zdWJzY3JpcHRpb25zGAEgAygLMiAuc2RrLnYxYWxwaGEuVHJpZ2dlclN1YnNjcmlwdGlvbiJACgdUcmlnZ2VyEg4KAmlkGAEgASgEQgIwABIlCgdwYXlsb2FkGAIgASgLMhQuZ29vZ2xlLnByb3RvYnVmLkFueSInChhBd2FpdENhcGFiaWxpdGllc1JlcXVlc3QSCwoDaWRzGAEgAygFIrgBChlBd2FpdENhcGFiaWxpdGllc1Jlc3BvbnNlEkgKCXJlc3BvbnNlcxgBIAMoCzI1LnNkay52MWFscGhhLkF3YWl0Q2FwYWJpbGl0aWVzUmVzcG9uc2UuUmVzcG9uc2VzRW50cnkaUQoOUmVzcG9uc2VzRW50cnkSCwoDa2V5GAEgASgFEi4KBXZhbHVlGAIgASgLMh8uc2RrLnYxYWxwaGEuQ2FwYWJpbGl0eVJlc3BvbnNlOgI4ASKgAQoORXhlY3V0ZVJlcXVlc3QSDgoGY29uZmlnGAEgASgMEisKCXN1YnNjcmliZRgCIAEoCzIWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eUgAEicKB3RyaWdnZXIYAyABKAsyFC5zZGsudjFhbHBoYS5UcmlnZ2VySAASHQoRbWF4X3Jlc3BvbnNlX3NpemUYBCABKARCAjAAQgkKB3JlcXVlc3QimQEKD0V4ZWN1dGlvblJlc3VsdBIhCgV2YWx1ZRgBIAEoCzIQLnZhbHVlcy52MS5WYWx1ZUgAEg8KBWVycm9yGAIgASgJSAASSAoVdHJpZ2dlcl9zdWJzY3JpcHRpb25zGAMgASgLMicuc2RrLnYxYWxwaGEuVHJpZ2dlclN1YnNjcmlwdGlvblJlcXVlc3RIAEIICgZyZXN1bHQiVgoRR2V0U2VjcmV0c1JlcXVlc3QSLAoIcmVxdWVzdHMYASADKAsyGi5zZGsudjFhbHBoYS5TZWNyZXRSZXF1ZXN0EhMKC2NhbGxiYWNrX2lkGAIgASgFIiIKE0F3YWl0U2VjcmV0c1JlcXVlc3QSCwoDaWRzGAEgAygFIqsBChRBd2FpdFNlY3JldHNSZXNwb25zZRJDCglyZXNwb25zZXMYASADKAsyMC5zZGsudjFhbHBoYS5Bd2FpdFNlY3JldHNSZXNwb25zZS5SZXNwb25zZXNFbnRyeRpOCg5SZXNwb25zZXNFbnRyeRILCgNrZXkYASABKAUSKwoFdmFsdWUYAiABKAsyHC5zZGsudjFhbHBoYS5TZWNyZXRSZXNwb25zZXM6AjgBIi4KDVNlY3JldFJlcXVlc3QSCgoCaWQYASABKAkSEQoJbmFtZXNwYWNlGAIgASgJIkUKBlNlY3JldBIKCgJpZBgBIAEoCRIRCgluYW1lc3BhY2UYAiABKAkSDQoFb3duZXIYAyABKAkSDQoFdmFsdWUYBCABKAkiSgoLU2VjcmV0RXJyb3ISCgoCaWQYASABKAkSEQoJbmFtZXNwYWNlGAIgASgJEg0KBW93bmVyGAMgASgJEg0KBWVycm9yGAQgASgJIm4KDlNlY3JldFJlc3BvbnNlEiUKBnNlY3JldBgBIAEoCzITLnNkay52MWFscGhhLlNlY3JldEgAEikKBWVycm9yGAIgASgLMhguc2RrLnYxYWxwaGEuU2VjcmV0RXJyb3JIAEIKCghyZXNwb25zZSJBCg9TZWNyZXRSZXNwb25zZXMSLgoJcmVzcG9uc2VzGAEgAygLMhsuc2RrLnYxYWxwaGEuU2VjcmV0UmVzcG9uc2UquAEKD0FnZ3JlZ2F0aW9uVHlwZRIgChxBR0dSRUdBVElPTl9UWVBFX1VOU1BFQ0lGSUVEEAASGwoXQUdHUkVHQVRJT05fVFlQRV9NRURJQU4QARIeChpBR0dSRUdBVElPTl9UWVBFX0lERU5USUNBTBACEiIKHkFHR1JFR0FUSU9OX1RZUEVfQ09NTU9OX1BSRUZJWBADEiIKHkFHR1JFR0FUSU9OX1RZUEVfQ09NTU9OX1NVRkZJWBAEKjkKBE1vZGUSFAoQTU9ERV9VTlNQRUNJRklFRBAAEgwKCE1PREVfRE9OEAESDQoJTU9ERV9OT0RFEAJCaAoPY29tLnNkay52MWFscGhhQghTZGtQcm90b1ABogIDU1hYqgILU2RrLlYxYWxwaGHKAgtTZGtcVjFhbHBoYeICF1Nka1xWMWFscGhhXEdQQk1ldGFkYXRh6gIMU2RrOjpWMWFscGhhYgZwcm90bzM", [file_google_protobuf_any, file_google_protobuf_empty, file_values_v1_values]);
-var SimpleConsensusInputsSchema = /* @__PURE__ */ messageDesc(file_sdk_v1alpha_sdk, 0);
 var FieldsMapSchema = /* @__PURE__ */ messageDesc(file_sdk_v1alpha_sdk, 1);
 var ConsensusDescriptorSchema = /* @__PURE__ */ messageDesc(file_sdk_v1alpha_sdk, 2);
-var ReportRequestSchema = /* @__PURE__ */ messageDesc(file_sdk_v1alpha_sdk, 3);
 var ReportResponseSchema = /* @__PURE__ */ messageDesc(file_sdk_v1alpha_sdk, 4);
-var CapabilityRequestSchema = /* @__PURE__ */ messageDesc(file_sdk_v1alpha_sdk, 6);
-var TriggerSubscriptionRequestSchema = /* @__PURE__ */ messageDesc(file_sdk_v1alpha_sdk, 9);
-var AwaitCapabilitiesRequestSchema = /* @__PURE__ */ messageDesc(file_sdk_v1alpha_sdk, 11);
-var AwaitCapabilitiesResponseSchema = /* @__PURE__ */ messageDesc(file_sdk_v1alpha_sdk, 12);
-var ExecuteRequestSchema = /* @__PURE__ */ messageDesc(file_sdk_v1alpha_sdk, 13);
 var ExecutionResultSchema = /* @__PURE__ */ messageDesc(file_sdk_v1alpha_sdk, 14);
-var GetSecretsRequestSchema = /* @__PURE__ */ messageDesc(file_sdk_v1alpha_sdk, 15);
-var AwaitSecretsRequestSchema = /* @__PURE__ */ messageDesc(file_sdk_v1alpha_sdk, 16);
-var AwaitSecretsResponseSchema = /* @__PURE__ */ messageDesc(file_sdk_v1alpha_sdk, 17);
-var SecretRequestSchema = /* @__PURE__ */ messageDesc(file_sdk_v1alpha_sdk, 18);
 var AggregationType;
 (function(AggregationType2) {
   AggregationType2[AggregationType2["UNSPECIFIED"] = 0] = "UNSPECIFIED";
@@ -6199,45 +6140,6 @@ var KeyType;
   KeyType2[KeyType2["UNSPECIFIED"] = 0] = "UNSPECIFIED";
   KeyType2[KeyType2["ECDSA_EVM"] = 1] = "ECDSA_EVM";
 })(KeyType || (KeyType = {}));
-var file_capabilities_scheduler_cron_v1_trigger = /* @__PURE__ */ fileDesc("CixjYXBhYmlsaXRpZXMvc2NoZWR1bGVyL2Nyb24vdjEvdHJpZ2dlci5wcm90bxIeY2FwYWJpbGl0aWVzLnNjaGVkdWxlci5jcm9uLnYxIhoKBkNvbmZpZxIQCghzY2hlZHVsZRgBIAEoCSJHCgdQYXlsb2FkEjwKGHNjaGVkdWxlZF9leGVjdXRpb25fdGltZRgBIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiNQoNTGVnYWN5UGF5bG9hZBIgChhzY2hlZHVsZWRfZXhlY3V0aW9uX3RpbWUYASABKAk6AhgBMvUBCgRDcm9uElwKB1RyaWdnZXISJi5jYXBhYmlsaXRpZXMuc2NoZWR1bGVyLmNyb24udjEuQ29uZmlnGicuY2FwYWJpbGl0aWVzLnNjaGVkdWxlci5jcm9uLnYxLlBheWxvYWQwARJzCg1MZWdhY3lUcmlnZ2VyEiYuY2FwYWJpbGl0aWVzLnNjaGVkdWxlci5jcm9uLnYxLkNvbmZpZxotLmNhcGFiaWxpdGllcy5zY2hlZHVsZXIuY3Jvbi52MS5MZWdhY3lQYXlsb2FkIgmIAgGKtRgCCAEwARoagrUYFggBEhJjcm9uLXRyaWdnZXJAMS4wLjBCzQEKImNvbS5jYXBhYmlsaXRpZXMuc2NoZWR1bGVyLmNyb24udjFCDFRyaWdnZXJQcm90b1ABogIDQ1NDqgIeQ2FwYWJpbGl0aWVzLlNjaGVkdWxlci5Dcm9uLlYxygIeQ2FwYWJpbGl0aWVzXFNjaGVkdWxlclxDcm9uXFYx4gIqQ2FwYWJpbGl0aWVzXFNjaGVkdWxlclxDcm9uXFYxXEdQQk1ldGFkYXRh6gIhQ2FwYWJpbGl0aWVzOjpTY2hlZHVsZXI6OkNyb246OlYxYgZwcm90bzM", [file_google_protobuf_timestamp, file_tools_generator_v1alpha_cre_metadata]);
-var ConfigSchema2 = /* @__PURE__ */ messageDesc(file_capabilities_scheduler_cron_v1_trigger, 0);
-var PayloadSchema2 = /* @__PURE__ */ messageDesc(file_capabilities_scheduler_cron_v1_trigger, 1);
-
-class CronCapability {
-  static CAPABILITY_ID = "cron-trigger@1.0.0";
-  static CAPABILITY_NAME = "cron-trigger";
-  static CAPABILITY_VERSION = "1.0.0";
-  trigger(config) {
-    const capabilityId = CronCapability.CAPABILITY_ID;
-    return new CronTrigger(config, capabilityId, "Trigger");
-  }
-}
-
-class CronTrigger {
-  _capabilityId;
-  _method;
-  config;
-  constructor(config, _capabilityId, _method) {
-    this._capabilityId = _capabilityId;
-    this._method = _method;
-    this.config = config.$typeName ? config : fromJson(ConfigSchema2, config);
-  }
-  capabilityId() {
-    return this._capabilityId;
-  }
-  method() {
-    return this._method;
-  }
-  outputSchema() {
-    return PayloadSchema2;
-  }
-  configAsAny() {
-    return anyPack(ConfigSchema2, this.config);
-  }
-  adapt(rawOutput) {
-    return rawOutput;
-  }
-}
 var lookup = [];
 var revLookup = [];
 var code = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -7554,10 +7456,6 @@ var transcode = notimpl("transcode");
 var prepareRuntime = () => {
   globalThis.Buffer = Buffer2;
 };
-var handler = (trigger, fn) => ({
-  trigger,
-  fn
-});
 prepareRuntime();
 var LAST_FINALIZED_BLOCK_NUMBER = {
   absVal: Buffer.from([3]).toString("base64"),
@@ -11360,279 +11258,6 @@ class UInt64 {
     return new UInt64(this.value / i2.value);
   }
 }
-
-class Decimal {
-  coeffecient;
-  exponent;
-  static parse(s) {
-    const m = /^([+-])?(\d+)(?:\.(\d+))?$/.exec(s.trim());
-    if (!m)
-      throw new Error("invalid decimal string");
-    const signStr = m[1] ?? "+";
-    const intPart = m[2] ?? "0";
-    let fracPart = m[3] ?? "";
-    while (fracPart.length > 0 && fracPart[fracPart.length - 1] === "0") {
-      fracPart = fracPart.slice(0, -1);
-    }
-    const exponent = fracPart.length === 0 ? 0 : -fracPart.length;
-    const digits = intPart + fracPart || "0";
-    const coeffecient = BigInt((signStr === "-" ? "-" : "") + digits);
-    return new Decimal(coeffecient, exponent);
-  }
-  constructor(coeffecient, exponent) {
-    this.coeffecient = coeffecient;
-    this.exponent = exponent;
-  }
-}
-
-class Value {
-  value;
-  static from(value) {
-    return new Value(value);
-  }
-  static wrap(value) {
-    return new Value(value);
-  }
-  constructor(value) {
-    if (value instanceof Value) {
-      this.value = value.value;
-    } else if (isValueProto(value)) {
-      this.value = value;
-    } else {
-      this.value = Value.wrapInternal(value);
-    }
-  }
-  proto() {
-    return this.value;
-  }
-  static toUint8Array(input) {
-    return input instanceof Uint8Array ? input : new Uint8Array(input);
-  }
-  static bigintToBytesBE(abs) {
-    if (abs === 0n)
-      return new Uint8Array;
-    let hex = abs.toString(16);
-    if (hex.length % 2 === 1)
-      hex = "0" + hex;
-    const len2 = hex.length / 2;
-    const out = new Uint8Array(len2);
-    for (let i2 = 0;i2 < len2; i2++) {
-      out[i2] = parseInt(hex.slice(i2 * 2, i2 * 2 + 2), 16);
-    }
-    return out;
-  }
-  static bigIntToProtoBigInt(v) {
-    const sign = v === 0n ? 0n : v < 0n ? -1n : 1n;
-    const abs = v < 0n ? -v : v;
-    return create(BigIntSchema, {
-      absVal: Value.bigintToBytesBE(abs),
-      sign
-    });
-  }
-  static toTimestamp(d) {
-    const date = d instanceof Date ? d : new Date(d);
-    return timestampFromDate(date);
-  }
-  static isPlainObject(v) {
-    return typeof v === "object" && v !== null && v.constructor === Object;
-  }
-  static isObject(v) {
-    return typeof v === "object" && v !== null;
-  }
-  static wrapInternal(v) {
-    if (v === null || v === undefined)
-      throw new Error("cannot wrap null/undefined into Value");
-    if (v instanceof Value) {
-      return v.proto();
-    }
-    if (v instanceof Uint8Array)
-      return create(ValueSchema2, { value: { case: "bytesValue", value: v } });
-    if (v instanceof ArrayBuffer)
-      return create(ValueSchema2, {
-        value: { case: "bytesValue", value: Value.toUint8Array(v) }
-      });
-    if (v instanceof Date)
-      return create(ValueSchema2, {
-        value: { case: "timeValue", value: Value.toTimestamp(v) }
-      });
-    if (v instanceof Int64) {
-      return create(ValueSchema2, {
-        value: { case: "int64Value", value: v.value }
-      });
-    }
-    if (v instanceof UInt64) {
-      return create(ValueSchema2, {
-        value: { case: "uint64Value", value: v.value }
-      });
-    }
-    if (v instanceof Decimal) {
-      const decimalProto = create(DecimalSchema, {
-        coefficient: Value.bigIntToProtoBigInt(v.coeffecient),
-        exponent: v.exponent
-      });
-      return create(ValueSchema2, {
-        value: { case: "decimalValue", value: decimalProto }
-      });
-    }
-    switch (typeof v) {
-      case "string":
-        return create(ValueSchema2, {
-          value: { case: "stringValue", value: v }
-        });
-      case "boolean":
-        return create(ValueSchema2, { value: { case: "boolValue", value: v } });
-      case "bigint": {
-        return create(ValueSchema2, {
-          value: { case: "bigintValue", value: Value.bigIntToProtoBigInt(v) }
-        });
-      }
-      case "number": {
-        return create(ValueSchema2, {
-          value: { case: "float64Value", value: v }
-        });
-      }
-      case "object":
-        break;
-      default:
-        throw new Error(`unsupported type: ${typeof v}`);
-    }
-    if (Array.isArray(v)) {
-      const fields2 = v.map(Value.wrapInternal);
-      const list = create(ListSchema, { fields: fields2 });
-      return create(ValueSchema2, { value: { case: "listValue", value: list } });
-    }
-    if (Value.isPlainObject(v)) {
-      const fields2 = {};
-      for (const [k, vv] of Object.entries(v)) {
-        fields2[k] = Value.wrapInternal(vv);
-      }
-      const map = create(MapSchema, { fields: fields2 });
-      return create(ValueSchema2, { value: { case: "mapValue", value: map } });
-    }
-    if (Value.isObject(v) && v.constructor !== Object) {
-      const fields2 = {};
-      for (const [k, vv] of Object.entries(v)) {
-        fields2[k] = Value.wrapInternal(vv);
-      }
-      const map = create(MapSchema, { fields: fields2 });
-      return create(ValueSchema2, { value: { case: "mapValue", value: map } });
-    }
-    throw new Error("unsupported object instance");
-  }
-  unwrap() {
-    return unwrap(this.value);
-  }
-  unwrapToType(options) {
-    const unwrapped = this.unwrap();
-    if ("instance" in options) {
-      if (typeof unwrapped !== typeof options.instance) {
-        throw new Error(`Cannot unwrap to type ${typeof options.instance}`);
-      }
-      return unwrapped;
-    }
-    if (options.schema) {
-      return options.schema.parse(unwrapped);
-    }
-    const obj = options.factory();
-    if (typeof unwrapped === "object" && unwrapped !== null) {
-      Object.assign(obj, unwrapped);
-    } else {
-      throw new Error(`Cannot copy properties from primitive value to object instance. Use a schema instead.`);
-    }
-    return obj;
-  }
-}
-function unwrap(value) {
-  switch (value.value.case) {
-    case "stringValue":
-      return value.value.value;
-    case "boolValue":
-      return value.value.value;
-    case "bytesValue":
-      return value.value.value;
-    case "int64Value":
-      return new Int64(value.value.value);
-    case "uint64Value":
-      return new UInt64(value.value.value);
-    case "float64Value":
-      return value.value.value;
-    case "bigintValue": {
-      const bigIntValue = value.value.value;
-      const absVal = bigIntValue.absVal;
-      const sign = bigIntValue.sign;
-      let result = 0n;
-      for (const byte of absVal) {
-        result = result << 8n | BigInt(byte);
-      }
-      return sign < 0n ? -result : result;
-    }
-    case "timeValue": {
-      return timestampDate(value.value.value);
-    }
-    case "listValue": {
-      const list = value.value.value;
-      return list.fields.map(unwrap);
-    }
-    case "mapValue": {
-      const map = value.value.value;
-      const result = {};
-      for (const [key, val] of Object.entries(map.fields)) {
-        result[key] = unwrap(val);
-      }
-      return result;
-    }
-    case "decimalValue": {
-      const decimal = value.value.value;
-      const coefficient = decimal.coefficient;
-      const exponent = decimal.exponent;
-      if (!coefficient) {
-        return new Decimal(0n, 0);
-      }
-      let coeffBigInt;
-      const absVal = coefficient.absVal;
-      const sign = coefficient.sign;
-      let result = 0n;
-      for (const byte of absVal) {
-        result = result << 8n | BigInt(byte);
-      }
-      coeffBigInt = sign < 0n ? -result : result;
-      return new Decimal(coeffBigInt, exponent);
-    }
-    default:
-      throw new Error(`Unsupported value type: ${value.value.case}`);
-  }
-}
-function isValueProto(value) {
-  return value.$typeName && typeof value.$typeName === "string" && value.$typeName === "values.v1.Value";
-}
-async function standardValidate(schema, input) {
-  let result = schema["~standard"].validate(input);
-  if (result instanceof Promise)
-    result = await result;
-  if (result.issues) {
-    const errorDetails = JSON.stringify(result.issues, null, 2);
-    throw new Error(`Config validation failed. Expectations were not matched:
-
-${errorDetails}`);
-  }
-  return result.value;
-}
-var defaultJsonParser = (config) => JSON.parse(Buffer.from(config).toString());
-var configHandler = async (request, { configParser, configSchema } = {}) => {
-  const config = request.config;
-  const parser = configParser || defaultJsonParser;
-  let intermediateConfig;
-  try {
-    intermediateConfig = parser(config);
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(`Failed to parse configuration: ${error.message}`);
-    } else {
-      throw new Error(`Failed to parse configuration: unknown error`);
-    }
-  }
-  return configSchema ? standardValidate(configSchema, intermediateConfig) : intermediateConfig;
-};
 var exports_external = {};
 __export(exports_external, {
   void: () => voidType,
@@ -15625,506 +15250,6 @@ var hostBindings = new Proxy({}, {
     return _hostBindings[prop];
   }
 });
-
-class ConsensusCapability {
-  static CAPABILITY_ID = "consensus@1.0.0-alpha";
-  static CAPABILITY_NAME = "consensus";
-  static CAPABILITY_VERSION = "1.0.0-alpha";
-  simple(runtime, input) {
-    let payload;
-    if (input.$typeName) {
-      payload = input;
-    } else {
-      payload = fromJson(SimpleConsensusInputsSchema, input);
-    }
-    const capabilityId = ConsensusCapability.CAPABILITY_ID;
-    const capabilityResponse = runtime.callCapability({
-      capabilityId,
-      method: "Simple",
-      payload,
-      inputSchema: SimpleConsensusInputsSchema,
-      outputSchema: ValueSchema2
-    });
-    return {
-      result: () => {
-        const result = capabilityResponse.result();
-        return result;
-      }
-    };
-  }
-  report(runtime, input) {
-    let payload;
-    if (input.$typeName) {
-      payload = input;
-    } else {
-      payload = fromJson(ReportRequestSchema, input);
-    }
-    const capabilityId = ConsensusCapability.CAPABILITY_ID;
-    const capabilityResponse = runtime.callCapability({
-      capabilityId,
-      method: "Report",
-      payload,
-      inputSchema: ReportRequestSchema,
-      outputSchema: ReportResponseSchema
-    });
-    return {
-      result: () => {
-        const result = capabilityResponse.result();
-        return new Report(result);
-      }
-    };
-  }
-}
-
-class CapabilityError extends Error {
-  name;
-  capabilityId;
-  method;
-  callbackId;
-  constructor(message, options) {
-    super(message);
-    this.name = "CapabilityError";
-    if (options) {
-      this.capabilityId = options.capabilityId;
-      this.method = options.method;
-      this.callbackId = options.callbackId;
-    }
-  }
-}
-
-class DonModeError extends Error {
-  constructor() {
-    super("cannot use Runtime inside RunInNodeMode");
-  }
-}
-
-class NodeModeError extends Error {
-  constructor() {
-    super("cannot use NodeRuntime outside RunInNodeMode");
-    this.name = "NodeModeError";
-  }
-}
-
-class SecretsError extends Error {
-  secretRequest;
-  error;
-  constructor(secretRequest, error) {
-    super(`error fetching ${secretRequest}: ${error}`);
-    this.secretRequest = secretRequest;
-    this.error = error;
-  }
-}
-
-class BaseRuntimeImpl {
-  config;
-  nextCallId;
-  helpers;
-  maxResponseSize;
-  mode;
-  modeError;
-  constructor(config, nextCallId, helpers, maxResponseSize, mode) {
-    this.config = config;
-    this.nextCallId = nextCallId;
-    this.helpers = helpers;
-    this.maxResponseSize = maxResponseSize;
-    this.mode = mode;
-  }
-  callCapability({ capabilityId, method, payload, inputSchema, outputSchema }) {
-    if (this.modeError) {
-      return {
-        result: () => {
-          throw this.modeError;
-        }
-      };
-    }
-    const callbackId = this.allocateCallbackId();
-    const anyPayload = anyPack(inputSchema, payload);
-    const req = create(CapabilityRequestSchema, {
-      id: capabilityId,
-      method,
-      payload: anyPayload,
-      callbackId
-    });
-    if (!this.helpers.call(req)) {
-      return {
-        result: () => {
-          throw new CapabilityError(`Capability not found ${capabilityId}`, {
-            callbackId,
-            method,
-            capabilityId
-          });
-        }
-      };
-    }
-    return {
-      result: () => this.awaitAndUnwrapCapabilityResponse(callbackId, capabilityId, method, outputSchema)
-    };
-  }
-  allocateCallbackId() {
-    const callbackId = this.nextCallId;
-    if (this.mode === Mode.DON) {
-      this.nextCallId++;
-    } else {
-      this.nextCallId--;
-    }
-    return callbackId;
-  }
-  awaitAndUnwrapCapabilityResponse(callbackId, capabilityId, method, outputSchema) {
-    const awaitRequest = create(AwaitCapabilitiesRequestSchema, {
-      ids: [callbackId]
-    });
-    const awaitResponse = this.helpers.await(awaitRequest, this.maxResponseSize);
-    const capabilityResponse = awaitResponse.responses[callbackId];
-    if (!capabilityResponse) {
-      throw new CapabilityError(`No response found for callback ID ${callbackId}`, {
-        capabilityId,
-        method,
-        callbackId
-      });
-    }
-    const response = capabilityResponse.response;
-    switch (response.case) {
-      case "payload": {
-        try {
-          return anyUnpack(response.value, outputSchema);
-        } catch {
-          throw new CapabilityError(`Error cannot unwrap payload`, {
-            capabilityId,
-            method,
-            callbackId
-          });
-        }
-      }
-      case "error":
-        throw new CapabilityError(`Error ${response.value}`, {
-          capabilityId,
-          method,
-          callbackId
-        });
-      default:
-        throw new CapabilityError(`Error cannot unwrap ${response.case}`, {
-          capabilityId,
-          method,
-          callbackId
-        });
-    }
-  }
-  getNextCallId() {
-    return this.nextCallId;
-  }
-  now() {
-    return new Date(this.helpers.now());
-  }
-  log(message) {
-    this.helpers.log(message);
-  }
-}
-
-class NodeRuntimeImpl extends BaseRuntimeImpl {
-  _isNodeRuntime = true;
-  constructor(config, nextCallId, helpers, maxResponseSize) {
-    helpers.switchModes(Mode.NODE);
-    super(config, nextCallId, helpers, maxResponseSize, Mode.NODE);
-  }
-}
-
-class RuntimeImpl extends BaseRuntimeImpl {
-  nextNodeCallId = -1;
-  constructor(config, nextCallId, helpers, maxResponseSize) {
-    helpers.switchModes(Mode.DON);
-    super(config, nextCallId, helpers, maxResponseSize, Mode.DON);
-  }
-  runInNodeMode(fn, consensusAggregation, unwrapOptions) {
-    return (...args) => {
-      this.modeError = new DonModeError;
-      const nodeRuntime = new NodeRuntimeImpl(this.config, this.nextNodeCallId, this.helpers, this.maxResponseSize);
-      const consensusInput = this.prepareConsensusInput(consensusAggregation);
-      try {
-        const observation = fn(nodeRuntime, ...args);
-        this.captureObservation(consensusInput, observation, consensusAggregation.descriptor);
-      } catch (e) {
-        this.captureError(consensusInput, e);
-      } finally {
-        this.restoreDonMode(nodeRuntime);
-      }
-      return this.runConsensusAndWrap(consensusInput, unwrapOptions);
-    };
-  }
-  prepareConsensusInput(consensusAggregation) {
-    const consensusInput = create(SimpleConsensusInputsSchema, {
-      descriptors: consensusAggregation.descriptor
-    });
-    if (consensusAggregation.defaultValue) {
-      const defaultValue = Value.from(consensusAggregation.defaultValue).proto();
-      clearIgnoredFields(defaultValue, consensusAggregation.descriptor);
-      consensusInput.default = defaultValue;
-    }
-    return consensusInput;
-  }
-  captureObservation(consensusInput, observation, descriptor) {
-    const observationValue = Value.from(observation).proto();
-    clearIgnoredFields(observationValue, descriptor);
-    consensusInput.observation = {
-      case: "value",
-      value: observationValue
-    };
-  }
-  captureError(consensusInput, e) {
-    consensusInput.observation = {
-      case: "error",
-      value: e instanceof Error && e.message || String(e)
-    };
-  }
-  restoreDonMode(nodeRuntime) {
-    this.modeError = undefined;
-    this.nextNodeCallId = nodeRuntime.nextCallId;
-    nodeRuntime.modeError = new NodeModeError;
-    this.helpers.switchModes(Mode.DON);
-  }
-  runConsensusAndWrap(consensusInput, unwrapOptions) {
-    const consensus = new ConsensusCapability;
-    const call = consensus.simple(this, consensusInput);
-    return {
-      result: () => {
-        const result = call.result();
-        const wrappedValue = Value.wrap(result);
-        return unwrapOptions ? wrappedValue.unwrapToType(unwrapOptions) : wrappedValue.unwrap();
-      }
-    };
-  }
-  getSecret(request) {
-    if (this.modeError) {
-      return {
-        result: () => {
-          throw this.modeError;
-        }
-      };
-    }
-    const secretRequest = request.$typeName ? request : create(SecretRequestSchema, request);
-    const id = this.nextCallId;
-    this.nextCallId++;
-    const secretsReq = create(GetSecretsRequestSchema, {
-      callbackId: id,
-      requests: [secretRequest]
-    });
-    if (!this.helpers.getSecrets(secretsReq, this.maxResponseSize)) {
-      return {
-        result: () => {
-          throw new SecretsError(secretRequest, "host is not making the secrets request");
-        }
-      };
-    }
-    return {
-      result: () => this.awaitAndUnwrapSecret(id, secretRequest)
-    };
-  }
-  awaitAndUnwrapSecret(id, secretRequest) {
-    const awaitRequest = create(AwaitSecretsRequestSchema, { ids: [id] });
-    const awaitResponse = this.helpers.awaitSecrets(awaitRequest, this.maxResponseSize);
-    const secretsResponse = awaitResponse.responses[id];
-    if (!secretsResponse) {
-      throw new SecretsError(secretRequest, "no response");
-    }
-    const responses = secretsResponse.responses;
-    if (responses.length !== 1) {
-      throw new SecretsError(secretRequest, "invalid value returned from host");
-    }
-    const response = responses[0].response;
-    switch (response.case) {
-      case "secret":
-        return response.value;
-      case "error":
-        throw new SecretsError(secretRequest, response.value.error);
-      default:
-        throw new SecretsError(secretRequest, "cannot unmarshal returned value from host");
-    }
-  }
-  report(input) {
-    const consensus = new ConsensusCapability;
-    const call = consensus.report(this, input);
-    return {
-      result: () => call.result()
-    };
-  }
-}
-function clearIgnoredFields(value2, descriptor) {
-  if (!descriptor || !value2) {
-    return;
-  }
-  const fieldsMap = descriptor.descriptor?.case === "fieldsMap" ? descriptor.descriptor.value : undefined;
-  if (!fieldsMap) {
-    return;
-  }
-  if (value2.value?.case === "mapValue") {
-    const mapValue = value2.value.value;
-    if (!mapValue || !mapValue.fields) {
-      return;
-    }
-    for (const [key, val] of Object.entries(mapValue.fields)) {
-      const nestedDescriptor = fieldsMap.fields[key];
-      if (!nestedDescriptor) {
-        delete mapValue.fields[key];
-        continue;
-      }
-      const nestedFieldsMap = nestedDescriptor.descriptor?.case === "fieldsMap" ? nestedDescriptor.descriptor.value : undefined;
-      if (nestedFieldsMap && val.value?.case === "mapValue") {
-        clearIgnoredFields(val, nestedDescriptor);
-      }
-    }
-  }
-}
-
-class Runtime extends RuntimeImpl {
-  constructor(config, nextCallId, maxResponseSize) {
-    super(config, nextCallId, WasmRuntimeHelpers.getInstance(), maxResponseSize);
-  }
-}
-
-class WasmRuntimeHelpers {
-  static instance;
-  constructor() {}
-  now() {
-    return hostBindings.now();
-  }
-  static getInstance() {
-    if (!WasmRuntimeHelpers.instance) {
-      WasmRuntimeHelpers.instance = new WasmRuntimeHelpers;
-    }
-    return WasmRuntimeHelpers.instance;
-  }
-  call(request) {
-    return hostBindings.callCapability(toBinary(CapabilityRequestSchema, request)) >= 0;
-  }
-  await(request, maxResponseSize) {
-    const responseSize = Math.trunc(Number(maxResponseSize));
-    const response = hostBindings.awaitCapabilities(toBinary(AwaitCapabilitiesRequestSchema, request), responseSize);
-    const responseBytes = Array.isArray(response) ? new Uint8Array(response) : response;
-    return fromBinary(AwaitCapabilitiesResponseSchema, responseBytes);
-  }
-  getSecrets(request, maxResponseSize) {
-    const responseSize = Math.trunc(Number(maxResponseSize));
-    return hostBindings.getSecrets(toBinary(GetSecretsRequestSchema, request), responseSize) >= 0;
-  }
-  awaitSecrets(request, maxResponseSize) {
-    const responseSize = Math.trunc(Number(maxResponseSize));
-    const response = hostBindings.awaitSecrets(toBinary(AwaitSecretsRequestSchema, request), responseSize);
-    const responseBytes = Array.isArray(response) ? new Uint8Array(response) : response;
-    return fromBinary(AwaitSecretsResponseSchema, responseBytes);
-  }
-  switchModes(mode) {
-    hostBindings.switchModes(mode);
-  }
-  log(message) {
-    hostBindings.log(message);
-  }
-}
-
-class Runner {
-  config;
-  request;
-  constructor(config, request) {
-    this.config = config;
-    this.request = request;
-  }
-  static async newRunner(configHandlerParams) {
-    hostBindings.versionV2();
-    const request = Runner.getRequest();
-    const config = await configHandler(request, configHandlerParams);
-    return new Runner(config, request);
-  }
-  static getRequest() {
-    const argsString = hostBindings.getWasiArgs();
-    let args;
-    try {
-      args = JSON.parse(argsString);
-    } catch (e) {
-      throw new Error("Invalid request: could not parse arguments");
-    }
-    if (args.length !== 2) {
-      throw new Error("Invalid request: must contain payload");
-    }
-    const base64Request = args[1];
-    const bytes = Buffer.from(base64Request, "base64");
-    return fromBinary(ExecuteRequestSchema, bytes);
-  }
-  async run(initFn) {
-    const runtime = new Runtime(this.config, 0, this.request.maxResponseSize);
-    var result;
-    try {
-      const workflow = await initFn(this.config, {
-        getSecret: runtime.getSecret.bind(runtime)
-      });
-      switch (this.request.request.case) {
-        case "subscribe":
-          result = this.handleSubscribePhase(this.request, workflow);
-          break;
-        case "trigger":
-          result = this.handleExecutionPhase(this.request, workflow, runtime);
-          break;
-        default:
-          throw new Error("Unknown request type");
-      }
-    } catch (e) {
-      const err = e instanceof Error ? e.message : String(e);
-      result = create(ExecutionResultSchema, {
-        result: { case: "error", value: err }
-      });
-    }
-    const awaitedResult = await result;
-    hostBindings.sendResponse(toBinary(ExecutionResultSchema, awaitedResult));
-  }
-  async handleExecutionPhase(req, workflow, runtime) {
-    if (req.request.case !== "trigger") {
-      throw new Error("cannot handle non-trigger request as a trigger");
-    }
-    const triggerMsg = req.request.value;
-    const id = BigInt(triggerMsg.id);
-    if (id > BigInt(Number.MAX_SAFE_INTEGER)) {
-      throw new Error(`Trigger ID ${id} exceeds safe integer range`);
-    }
-    const index = Number(triggerMsg.id);
-    if (Number.isFinite(index) && index >= 0 && index < workflow.length) {
-      const entry = workflow[index];
-      const schema = entry.trigger.outputSchema();
-      const payloadAny = triggerMsg.payload;
-      const decoded = fromBinary(schema, payloadAny.value);
-      const adapted = entry.trigger.adapt(decoded);
-      try {
-        const result = await entry.fn(runtime, adapted);
-        const wrapped = Value.wrap(result);
-        return create(ExecutionResultSchema, {
-          result: { case: "value", value: wrapped.proto() }
-        });
-      } catch (e) {
-        const err = e instanceof Error ? e.message : String(e);
-        return create(ExecutionResultSchema, {
-          result: { case: "error", value: err }
-        });
-      }
-    }
-    return create(ExecutionResultSchema, {
-      result: { case: "error", value: "trigger not found" }
-    });
-  }
-  handleSubscribePhase(req, workflow) {
-    if (req.request.case !== "subscribe") {
-      return create(ExecutionResultSchema, {
-        result: { case: "error", value: "subscribe request expected" }
-      });
-    }
-    const subscriptions = workflow.map((entry) => ({
-      id: entry.trigger.capabilityId(),
-      method: entry.trigger.method(),
-      payload: entry.trigger.configAsAny()
-    }));
-    const subscriptionRequest = create(TriggerSubscriptionRequestSchema, {
-      subscriptions
-    });
-    return create(ExecutionResultSchema, {
-      result: { case: "triggerSubscriptions", value: subscriptionRequest }
-    });
-  }
-}
 var prepareErrorResponse = (error) => {
   let errorMessage = null;
   if (error instanceof Error) {
@@ -16150,30 +15275,10 @@ var sendErrorResponse = (error) => {
   hostBindings.sendResponse(payload);
 };
 var zeroAddress = "0x0000000000000000000000000000000000000000";
-init_decodeAbiParameters();
 init_decodeFunctionResult();
 init_encodeFunctionData();
 init_toBytes();
-init_toHex();
 init_keccak256();
-function createEvmClient(chainName) {
-  const network248 = getNetwork({
-    chainFamily: "evm",
-    chainSelectorName: chainName,
-    isTestnet: true
-  });
-  if (!network248) {
-    throw new Error(`Network not found: ${chainName}`);
-  }
-  return new ClientCapability(network248.chainSelector.selector);
-}
-var RISK_SCORE_UPDATED_SIG = keccak256(toBytes("RiskScoreUpdated(address,uint8,uint8,uint8)"));
-var THREAT_LEVEL = {
-  SAFE: 0,
-  WATCH: 1,
-  WARNING: 2,
-  CRITICAL: 3
-};
 var RiskRegistry = [
   {
     type: "constructor",
@@ -16642,738 +15747,6 @@ var RiskRegistry = [
     inputs: [
       {
         name: "account",
-        type: "address",
-        internalType: "address"
-      }
-    ]
-  }
-];
-var ShieldVault = [
-  {
-    type: "constructor",
-    inputs: [
-      {
-        name: "_asset",
-        type: "address",
-        internalType: "address"
-      },
-      {
-        name: "_riskRegistry",
-        type: "address",
-        internalType: "address"
-      }
-    ],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "BASIS_POINTS",
-    inputs: [],
-    outputs: [
-      {
-        name: "",
-        type: "uint256",
-        internalType: "uint256"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "MIN_DEPOSIT",
-    inputs: [],
-    outputs: [
-      {
-        name: "",
-        type: "uint256",
-        internalType: "uint256"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "WARNING_WITHDRAW_PERCENT",
-    inputs: [],
-    outputs: [
-      {
-        name: "",
-        type: "uint256",
-        internalType: "uint256"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "addPool",
-    inputs: [
-      {
-        name: "adapter",
-        type: "address",
-        internalType: "address"
-      },
-      {
-        name: "tier",
-        type: "uint8",
-        internalType: "enum IShieldVault.RiskTier"
-      },
-      {
-        name: "targetWeight",
-        type: "uint256",
-        internalType: "uint256"
-      }
-    ],
-    outputs: [],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "asset",
-    inputs: [],
-    outputs: [
-      {
-        name: "",
-        type: "address",
-        internalType: "contract IERC20"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "creAddress",
-    inputs: [],
-    outputs: [
-      {
-        name: "",
-        type: "address",
-        internalType: "address"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "deposit",
-    inputs: [
-      {
-        name: "amount",
-        type: "uint256",
-        internalType: "uint256"
-      }
-    ],
-    outputs: [
-      {
-        name: "shares",
-        type: "uint256",
-        internalType: "uint256"
-      }
-    ],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "emergencyWithdraw",
-    inputs: [
-      {
-        name: "adapter",
-        type: "address",
-        internalType: "address"
-      },
-      {
-        name: "reason",
-        type: "string",
-        internalType: "string"
-      }
-    ],
-    outputs: [],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "getActivePoolCount",
-    inputs: [],
-    outputs: [
-      {
-        name: "count",
-        type: "uint256",
-        internalType: "uint256"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "getPoolAllocations",
-    inputs: [],
-    outputs: [
-      {
-        name: "",
-        type: "tuple[]",
-        internalType: "struct IShieldVault.PoolAllocation[]",
-        components: [
-          {
-            name: "adapter",
-            type: "address",
-            internalType: "address"
-          },
-          {
-            name: "tier",
-            type: "uint8",
-            internalType: "enum IShieldVault.RiskTier"
-          },
-          {
-            name: "targetWeight",
-            type: "uint256",
-            internalType: "uint256"
-          },
-          {
-            name: "currentAmount",
-            type: "uint256",
-            internalType: "uint256"
-          },
-          {
-            name: "isActive",
-            type: "bool",
-            internalType: "bool"
-          }
-        ]
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "getTotalAssets",
-    inputs: [],
-    outputs: [
-      {
-        name: "total",
-        type: "uint256",
-        internalType: "uint256"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "getUserBalance",
-    inputs: [
-      {
-        name: "user",
-        type: "address",
-        internalType: "address"
-      }
-    ],
-    outputs: [
-      {
-        name: "balance",
-        type: "uint256",
-        internalType: "uint256"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "getUserPosition",
-    inputs: [
-      {
-        name: "user",
-        type: "address",
-        internalType: "address"
-      }
-    ],
-    outputs: [
-      {
-        name: "",
-        type: "tuple",
-        internalType: "struct IShieldVault.UserPosition",
-        components: [
-          {
-            name: "totalDeposited",
-            type: "uint256",
-            internalType: "uint256"
-          },
-          {
-            name: "totalShares",
-            type: "uint256",
-            internalType: "uint256"
-          },
-          {
-            name: "lastDepositTime",
-            type: "uint256",
-            internalType: "uint256"
-          }
-        ]
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "owner",
-    inputs: [],
-    outputs: [
-      {
-        name: "",
-        type: "address",
-        internalType: "address"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "partialWithdraw",
-    inputs: [
-      {
-        name: "adapter",
-        type: "address",
-        internalType: "address"
-      },
-      {
-        name: "percentage",
-        type: "uint256",
-        internalType: "uint256"
-      },
-      {
-        name: "reason",
-        type: "string",
-        internalType: "string"
-      }
-    ],
-    outputs: [],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "paused",
-    inputs: [],
-    outputs: [
-      {
-        name: "",
-        type: "bool",
-        internalType: "bool"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "previewDeposit",
-    inputs: [
-      {
-        name: "amount",
-        type: "uint256",
-        internalType: "uint256"
-      }
-    ],
-    outputs: [
-      {
-        name: "shares",
-        type: "uint256",
-        internalType: "uint256"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "previewWithdraw",
-    inputs: [
-      {
-        name: "shares",
-        type: "uint256",
-        internalType: "uint256"
-      }
-    ],
-    outputs: [
-      {
-        name: "amount",
-        type: "uint256",
-        internalType: "uint256"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "rebalance",
-    inputs: [],
-    outputs: [],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "removePool",
-    inputs: [
-      {
-        name: "adapter",
-        type: "address",
-        internalType: "address"
-      }
-    ],
-    outputs: [],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "renounceOwnership",
-    inputs: [],
-    outputs: [],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "riskRegistry",
-    inputs: [],
-    outputs: [
-      {
-        name: "",
-        type: "address",
-        internalType: "contract IRiskRegistry"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "safeHaven",
-    inputs: [],
-    outputs: [
-      {
-        name: "",
-        type: "address",
-        internalType: "address"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "setCREAddress",
-    inputs: [
-      {
-        name: "_creAddress",
-        type: "address",
-        internalType: "address"
-      }
-    ],
-    outputs: [],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "setPaused",
-    inputs: [
-      {
-        name: "_paused",
-        type: "bool",
-        internalType: "bool"
-      }
-    ],
-    outputs: [],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "setSafeHaven",
-    inputs: [
-      {
-        name: "_safeHaven",
-        type: "address",
-        internalType: "address"
-      }
-    ],
-    outputs: [],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "totalShares",
-    inputs: [],
-    outputs: [
-      {
-        name: "",
-        type: "uint256",
-        internalType: "uint256"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "transferOwnership",
-    inputs: [
-      {
-        name: "newOwner",
-        type: "address",
-        internalType: "address"
-      }
-    ],
-    outputs: [],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "updatePoolWeight",
-    inputs: [
-      {
-        name: "adapter",
-        type: "address",
-        internalType: "address"
-      },
-      {
-        name: "newWeight",
-        type: "uint256",
-        internalType: "uint256"
-      }
-    ],
-    outputs: [],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "withdraw",
-    inputs: [
-      {
-        name: "shares",
-        type: "uint256",
-        internalType: "uint256"
-      }
-    ],
-    outputs: [
-      {
-        name: "amount",
-        type: "uint256",
-        internalType: "uint256"
-      }
-    ],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "event",
-    name: "Deposited",
-    inputs: [
-      {
-        name: "user",
-        type: "address",
-        indexed: true,
-        internalType: "address"
-      },
-      {
-        name: "amount",
-        type: "uint256",
-        indexed: false,
-        internalType: "uint256"
-      },
-      {
-        name: "shares",
-        type: "uint256",
-        indexed: false,
-        internalType: "uint256"
-      }
-    ],
-    anonymous: false
-  },
-  {
-    type: "event",
-    name: "EmergencyWithdrawExecuted",
-    inputs: [
-      {
-        name: "protocol",
-        type: "address",
-        indexed: true,
-        internalType: "address"
-      },
-      {
-        name: "amountWithdrawn",
-        type: "uint256",
-        indexed: false,
-        internalType: "uint256"
-      },
-      {
-        name: "threatLevel",
-        type: "uint8",
-        indexed: false,
-        internalType: "enum IRiskRegistry.ThreatLevel"
-      },
-      {
-        name: "reason",
-        type: "string",
-        indexed: false,
-        internalType: "string"
-      }
-    ],
-    anonymous: false
-  },
-  {
-    type: "event",
-    name: "OwnershipTransferred",
-    inputs: [
-      {
-        name: "previousOwner",
-        type: "address",
-        indexed: true,
-        internalType: "address"
-      },
-      {
-        name: "newOwner",
-        type: "address",
-        indexed: true,
-        internalType: "address"
-      }
-    ],
-    anonymous: false
-  },
-  {
-    type: "event",
-    name: "PoolAdded",
-    inputs: [
-      {
-        name: "adapter",
-        type: "address",
-        indexed: true,
-        internalType: "address"
-      },
-      {
-        name: "tier",
-        type: "uint8",
-        indexed: false,
-        internalType: "enum IShieldVault.RiskTier"
-      },
-      {
-        name: "targetWeight",
-        type: "uint256",
-        indexed: false,
-        internalType: "uint256"
-      }
-    ],
-    anonymous: false
-  },
-  {
-    type: "event",
-    name: "PoolRemoved",
-    inputs: [
-      {
-        name: "adapter",
-        type: "address",
-        indexed: true,
-        internalType: "address"
-      }
-    ],
-    anonymous: false
-  },
-  {
-    type: "event",
-    name: "Rebalanced",
-    inputs: [
-      {
-        name: "triggeredBy",
-        type: "address",
-        indexed: true,
-        internalType: "address"
-      },
-      {
-        name: "timestamp",
-        type: "uint256",
-        indexed: false,
-        internalType: "uint256"
-      }
-    ],
-    anonymous: false
-  },
-  {
-    type: "event",
-    name: "ShieldActivated",
-    inputs: [
-      {
-        name: "user",
-        type: "address",
-        indexed: true,
-        internalType: "address"
-      },
-      {
-        name: "fromProtocol",
-        type: "address",
-        indexed: true,
-        internalType: "address"
-      },
-      {
-        name: "amountSaved",
-        type: "uint256",
-        indexed: false,
-        internalType: "uint256"
-      },
-      {
-        name: "reason",
-        type: "string",
-        indexed: false,
-        internalType: "string"
-      }
-    ],
-    anonymous: false
-  },
-  {
-    type: "event",
-    name: "Withdrawn",
-    inputs: [
-      {
-        name: "user",
-        type: "address",
-        indexed: true,
-        internalType: "address"
-      },
-      {
-        name: "amount",
-        type: "uint256",
-        indexed: false,
-        internalType: "uint256"
-      },
-      {
-        name: "shares",
-        type: "uint256",
-        indexed: false,
-        internalType: "uint256"
-      }
-    ],
-    anonymous: false
-  },
-  {
-    type: "error",
-    name: "OwnableInvalidOwner",
-    inputs: [
-      {
-        name: "owner",
-        type: "address",
-        internalType: "address"
-      }
-    ]
-  },
-  {
-    type: "error",
-    name: "OwnableUnauthorizedAccount",
-    inputs: [
-      {
-        name: "account",
-        type: "address",
-        internalType: "address"
-      }
-    ]
-  },
-  {
-    type: "error",
-    name: "ReentrancyGuardReentrantCall",
-    inputs: []
-  },
-  {
-    type: "error",
-    name: "SafeERC20FailedOperation",
-    inputs: [
-      {
-        name: "token",
         type: "address",
         internalType: "address"
       }
@@ -19533,7 +17906,7 @@ var AggregatorV3 = [
     type: "function"
   }
 ];
-function createEvmClient2(chainName) {
+function createEvmClient(chainName) {
   const network248 = getNetwork({
     chainFamily: "evm",
     chainSelectorName: chainName,
@@ -19607,7 +17980,7 @@ function readAdapterSnapshot(runtime2, evmClient, adapterName, adapterAddress, a
   };
 }
 function readAllAdapters(runtime2, chainName, addresses) {
-  const evmClient = createEvmClient2(chainName);
+  const evmClient = createEvmClient(chainName);
   const allAdapterConfigs = [
     { name: "AaveAdapter", address: addresses.aaveAdapter, abi: AaveAdapter },
     { name: "CompoundAdapter", address: addresses.compoundAdapter, abi: CompoundAdapter },
@@ -19661,59 +18034,30 @@ function fetchTvlHistory(runtime2, tvlHistoryUrl, currentTvl, timestamp) {
   }))(url).result();
   return result;
 }
-function fetchAiSentinelData(sendRequester, url) {
-  const defaultGithub = { recentCommits: 0, openIssues: 0, lastPushDaysAgo: 999 };
-  const defaultAi = {
-    ai_threat_score: 30,
-    confidence: 0.3,
-    reasoning: "AI Sentinel unavailable — using default moderate score",
-    recommendation: "HOLD",
-    signals: []
-  };
+function fetchGitHubData(sendRequester, githubUrl) {
   try {
     const resp = sendRequester.sendRequest({
-      url,
+      url: githubUrl,
       method: "GET",
       headers: {
-        "User-Agent": "ShieldYield-CRE-Monitor",
-        "Content-Type": "application/json"
+        "User-Agent": "ShieldYield-CRE-Monitor"
       },
-      timeout: "15s"
+      timeout: "8s"
     }).result();
     if (!ok(resp)) {
-      return { github: defaultGithub, aiSentinel: defaultAi };
+      return { recentCommits: 0, openIssues: 0, lastPushDaysAgo: 999 };
     }
     const data = json(resp);
+    const lastPush = new Date(data.pushed_at || Date.now());
+    const daysSincePush = Math.floor((Date.now() - lastPush.getTime()) / (1000 * 60 * 60 * 24));
     return {
-      github: {
-        recentCommits: Number(data.github?.recentCommits) || 0,
-        openIssues: Number(data.github?.openIssues) || 0,
-        lastPushDaysAgo: Number(data.github?.lastPushDaysAgo) || 999
-      },
-      aiSentinel: {
-        ai_threat_score: Number(data.ai_threat_score) || 30,
-        confidence: Number(data.confidence) || 0.3,
-        reasoning: String(data.reasoning || ""),
-        recommendation: String(data.recommendation || "HOLD"),
-        signals: Array.isArray(data.signals) ? data.signals.map((s) => ({
-          source: String(s.source || ""),
-          signal: String(s.signal || ""),
-          sentiment: String(s.sentiment || "neutral")
-        })) : []
-      }
+      recentCommits: data.open_issues_count || 0,
+      openIssues: data.open_issues_count || 0,
+      lastPushDaysAgo: daysSincePush
     };
   } catch {
-    return { github: defaultGithub, aiSentinel: defaultAi };
+    return { recentCommits: 0, openIssues: 0, lastPushDaysAgo: 999 };
   }
-}
-function fetchAiSentinel(runtime2, aiSentinelUrl, protocol) {
-  const httpClient = new ClientCapability2;
-  const url = `${aiSentinelUrl}?protocol=${protocol}`;
-  const result = httpClient.sendRequest(runtime2, fetchAiSentinelData, ConsensusAggregationByFields({
-    github: identical,
-    aiSentinel: identical
-  }))(url).result();
-  return result;
 }
 function fetchSecurityData(sendRequester, goPlusUrl) {
   try {
@@ -19775,11 +18119,12 @@ function fetchTeamWalletData(sendRequester, teamWalletUrl) {
 }
 function fetchAllOffchainSignals(runtime2, config) {
   const httpClient = new ClientCapability2;
-  const sentinelResult = fetchAiSentinel(runtime2, config.aiSentinelUrl, config.primaryProtocol);
-  const github = sentinelResult.github;
-  const aiSentinel = sentinelResult.aiSentinel;
-  runtime2.log(`\uD83E\uDD16 AI Sentinel: score=${aiSentinel.ai_threat_score}, confidence=${aiSentinel.confidence}, rec=${aiSentinel.recommendation}`);
-  runtime2.log(`\uD83D\uDCE6 GitHub (via AI): issues=${github.openIssues}, lastPush=${github.lastPushDaysAgo}d`);
+  const github = httpClient.sendRequest(runtime2, fetchGitHubData, ConsensusAggregationByFields({
+    recentCommits: median,
+    openIssues: median,
+    lastPushDaysAgo: median
+  }))(config.githubUrl).result();
+  runtime2.log(`\uD83D\uDCE6 GitHub: issues=${github.openIssues}, lastPush=${github.lastPushDaysAgo}d`);
   const security = httpClient.sendRequest(runtime2, fetchSecurityData, ConsensusAggregationByFields({
     isHoneypot: identical,
     isOpenSource: identical,
@@ -19793,22 +18138,8 @@ function fetchAllOffchainSignals(runtime2, config) {
     recentLargeOutflows: identical
   }))(config.teamWalletUrl).result();
   runtime2.log(`\uD83D\uDC5B TeamWallet: balance=${teamWallet.balanceEth.toFixed(4)}ETH`);
-  return { github, security, teamWallet, aiSentinel };
+  return { github, security, teamWallet };
 }
-var EMPTY_AAVE_METRICS = {
-  totalSupplied: "0",
-  totalBorrowed: "0",
-  supplyApy: 0,
-  borrowApy: 0,
-  utilization: 0
-};
-var EMPTY_COMPOUND_METRICS = {
-  totalSupply: "0",
-  totalBorrow: "0",
-  utilization: 0,
-  supplyApr: 0,
-  borrowApr: 0
-};
 function fetchDefiMetricsData(sendRequester, url) {
   try {
     const resp = sendRequester.sendRequest({
@@ -19818,7 +18149,7 @@ function fetchDefiMetricsData(sendRequester, url) {
       timeout: "8s"
     }).result();
     if (!ok(resp)) {
-      return { aave: EMPTY_AAVE_METRICS, compound: EMPTY_COMPOUND_METRICS };
+      return { aave: null, compound: null };
     }
     const data = json(resp);
     return {
@@ -19828,17 +18159,17 @@ function fetchDefiMetricsData(sendRequester, url) {
         supplyApy: Number(data.aave.supplyApy) || 0,
         borrowApy: Number(data.aave.borrowApy) || 0,
         utilization: Number(data.aave.utilization) || 0
-      } : EMPTY_AAVE_METRICS,
+      } : null,
       compound: data.compound ? {
         totalSupply: String(data.compound.totalSupply || "0"),
         totalBorrow: String(data.compound.totalBorrow || "0"),
         utilization: Number(data.compound.utilization) || 0,
         supplyApr: Number(data.compound.supplyApr) || 0,
         borrowApr: Number(data.compound.borrowApr) || 0
-      } : EMPTY_COMPOUND_METRICS
+      } : null
     };
   } catch {
-    return { aave: EMPTY_AAVE_METRICS, compound: EMPTY_COMPOUND_METRICS };
+    return { aave: null, compound: null };
   }
 }
 function fetchDefiMetrics(runtime2, defiMetricsUrl) {
@@ -19906,46 +18237,41 @@ function readChainlinkPrices(runtime2, evmClient, feedAddresses) {
 }
 function computeRiskScore(adapter, currentRisk, offchain) {
   let score = 0;
-  let onChainDamage = false;
   if (!adapter.isHealthy) {
-    score += 20;
-    onChainDamage = true;
+    score += 25;
   }
   if (adapter.apy === 0n) {
     score += 10;
-    onChainDamage = true;
   } else if (adapter.apy > 5000n) {
     score += 7;
-    onChainDamage = true;
   }
   if (adapter.principal > 0n && adapter.balance === 0n) {
     score += 10;
-    onChainDamage = true;
   }
   const tvlChange = offchain.tvl.tvlChangePercent;
   if (tvlChange < -20) {
-    score += 12;
+    score += 15;
   } else if (tvlChange < -10) {
-    score += 8;
+    score += 10;
   } else if (tvlChange < -5) {
-    score += 4;
+    score += 5;
   }
   if (offchain.security.isHoneypot) {
-    score += 13;
+    score += 15;
   } else {
     if (offchain.security.ownerCanChangeBalance)
-      score += 7;
+      score += 8;
     if (offchain.security.isProxy && !offchain.security.isOpenSource)
-      score += 4;
+      score += 5;
     if (offchain.security.isMintable)
-      score += 3;
+      score += 4;
   }
   if (offchain.github.lastPushDaysAgo > 60) {
-    score += 5;
+    score += 10;
   } else if (offchain.github.lastPushDaysAgo > 30) {
-    score += 3;
+    score += 7;
   } else if (offchain.github.lastPushDaysAgo > 14) {
-    score += 2;
+    score += 4;
   }
   if (!offchain.security.isOpenSource) {
     score += 5;
@@ -19963,18 +18289,6 @@ function computeRiskScore(adapter, currentRisk, offchain) {
         score += 3;
       else if (util3 > 75)
         score += 1;
-    }
-  }
-  if (offchain.aiSentinel) {
-    const aiScore = offchain.aiSentinel.ai_threat_score;
-    const confidence = offchain.aiSentinel.confidence;
-    const weightedAiScore = Math.round(aiScore / 100 * 20 * confidence);
-    score += weightedAiScore;
-  }
-  if (score >= 76 && !onChainDamage) {
-    const scoreWithoutAi = offchain.aiSentinel ? score - Math.round(offchain.aiSentinel.ai_threat_score / 100 * 20 * offchain.aiSentinel.confidence) : score;
-    if (scoreWithoutAi < 76) {
-      score = 75;
     }
   }
   return Math.min(100, Math.max(0, score));
@@ -20066,14 +18380,6 @@ function detectAnomalies(adapter, offchain) {
       message: `Protocol utilization at ${util3.toFixed(1)}% — withdrawals may be delayed`
     });
   }
-  if (offchain.aiSentinel && offchain.aiSentinel.ai_threat_score > 70 && offchain.aiSentinel.confidence > 0.7) {
-    anomalies.push({
-      type: "AI_THREAT_DETECTED",
-      severity: "WARNING",
-      adapter: adapter.name,
-      message: `AI detected threat (score ${offchain.aiSentinel.ai_threat_score}): ${offchain.aiSentinel.reasoning.slice(0, 100)}`
-    });
-  }
   return anomalies;
 }
 function detectAllAnomalies(adapters, offchain) {
@@ -20096,6 +18402,18 @@ function getHighestSeverity(anomalies) {
   }
   return severityOrder[highest];
 }
+function createEvmClient2(chainName) {
+  const network248 = getNetwork({
+    chainFamily: "evm",
+    chainSelectorName: chainName,
+    isTestnet: true
+  });
+  if (!network248) {
+    throw new Error(`Network not found: ${chainName}`);
+  }
+  return new ClientCapability(network248.chainSelector.selector);
+}
+var RISK_SCORE_UPDATED_SIG = keccak256(toBytes("RiskScoreUpdated(address,uint8,uint8,uint8)"));
 var MAX_CHAIN_READS = 15;
 var ZERO_ADDRESS2 = "0x0000000000000000000000000000000000000000";
 function hasAdapters(addresses) {
@@ -20123,7 +18441,7 @@ function countPriceFeedReads(priceFeeds) {
     count++;
   return count;
 }
-var onCronTrigger = (runtime2) => {
+var main = (runtime2) => {
   runtime2.log("=".repeat(60));
   runtime2.log("\uD83D\uDEE1️  WORKFLOW 1+2: SENTINEL SCAN + THREAT ASSESSMENT");
   runtime2.log("Trigger: Cron (scheduled monitoring)");
@@ -20165,7 +18483,7 @@ ${"─".repeat(50)}`);
       const feedReads = countPriceFeedReads(priceFeeds);
       if (chainReadsUsed + feedReads <= MAX_CHAIN_READS) {
         runtime2.log("\uD83D\uDCC8 Fetching master prices...");
-        const evmClient = createEvmClient(evm.chainName);
+        const evmClient = createEvmClient2(evm.chainName);
         globalPrices = readChainlinkPrices(runtime2, evmClient, priceFeeds);
         chainReadsUsed += feedReads;
         if (evm.chainName === primaryChainName || primaryChainName === "") {
@@ -20234,8 +18552,7 @@ ${"=".repeat(60)}`);
   const teamWalletUrl = `https://api.arbiscan.io/api?module=account&action=balance&address=${primaryAdapter.teamWallet}&tag=latest&apikey=YourApiKeyToken`;
   runtime2.log(`Using primary protocol: ${apisConfig.primaryProtocol}`);
   const httpSignals = fetchAllOffchainSignals(runtime2, {
-    aiSentinelUrl: apisConfig.aiSentinelUrl,
-    primaryProtocol: apisConfig.primaryProtocol,
+    githubUrl: primaryAdapter.github,
     goPlusUrl,
     teamWalletUrl
   });
@@ -20306,7 +18623,7 @@ ${"=".repeat(60)}`);
   const hasWarningOrCritical = Object.values(riskScores).some((r) => r.level === "WARNING" || r.level === "CRITICAL");
   if (hasWarningOrCritical && primaryAddresses.riskRegistry) {
     runtime2.log("WARNING/CRITICAL detected — updating on-chain risk scores...");
-    const evmClient = createEvmClient(primaryChainName);
+    const evmClient = createEvmClient2(primaryChainName);
     const protocols = [];
     const scores = [];
     const reasons = [];
@@ -20368,389 +18685,6 @@ ${"=".repeat(60)}`);
     results: allResults
   });
 };
-var BASIS_POINTS = 1e4;
-function calculateOptimalAllocations(pools, riskInfo, config) {
-  const activePools = pools.filter((p) => p.isActive);
-  if (activePools.length === 0) {
-    return [];
-  }
-  const riskMap = new Map;
-  for (const r of riskInfo) {
-    riskMap.set(r.address.toLowerCase(), r);
-  }
-  const poolScores = [];
-  for (const pool of activePools) {
-    const risk = riskMap.get(pool.adapter.toLowerCase());
-    if (risk && (risk.threatLevel === "WARNING" || risk.threatLevel === "CRITICAL")) {
-      poolScores.push({ adapter: pool.adapter, score: 0 });
-      continue;
-    }
-    const riskScore = risk?.riskScore ?? 0;
-    const inverseRisk = Math.max(1, 100 - riskScore);
-    const apyBps = risk ? Number(risk.apy) : 0;
-    const apyBonus = Math.min(apyBps / 100, 20);
-    const desirability = inverseRisk + apyBonus;
-    poolScores.push({ adapter: pool.adapter, score: desirability });
-  }
-  const totalScore = poolScores.reduce((sum, p) => sum + p.score, 0);
-  if (totalScore === 0) {
-    return poolScores.map((p) => ({ adapter: p.adapter, newWeight: 0 }));
-  }
-  const maxAlloc = config.maxSingleAdapterAllocation;
-  let results = poolScores.map((p) => ({
-    adapter: p.adapter,
-    newWeight: Math.round(p.score / totalScore * BASIS_POINTS)
-  }));
-  let capped = true;
-  while (capped) {
-    capped = false;
-    let excess = 0;
-    let uncappedCount = 0;
-    for (const r of results) {
-      if (r.newWeight > maxAlloc) {
-        excess += r.newWeight - maxAlloc;
-        r.newWeight = maxAlloc;
-        capped = true;
-      } else if (r.newWeight > 0) {
-        uncappedCount++;
-      }
-    }
-    if (excess > 0 && uncappedCount > 0) {
-      const perPool = Math.floor(excess / uncappedCount);
-      for (const r of results) {
-        if (r.newWeight > 0 && r.newWeight < maxAlloc) {
-          r.newWeight += perPool;
-        }
-      }
-    }
-  }
-  const totalWeight = results.reduce((sum, r) => sum + r.newWeight, 0);
-  if (totalWeight > 0 && totalWeight !== BASIS_POINTS) {
-    const diff = BASIS_POINTS - totalWeight;
-    const largest = results.reduce((max, r) => r.newWeight > max.newWeight ? r : max);
-    largest.newWeight += diff;
-  }
-  return results;
-}
-function shouldRebalance(currentPools, optimal, thresholdBps = 500) {
-  for (const pool of currentPools) {
-    const optimalEntry = optimal.find((o) => o.adapter.toLowerCase() === pool.adapter.toLowerCase());
-    if (!optimalEntry)
-      continue;
-    const currentWeight = Number(pool.targetWeight);
-    const diff = Math.abs(currentWeight - optimalEntry.newWeight);
-    if (diff >= thresholdBps) {
-      return true;
-    }
-  }
-  return false;
-}
-var onRebalanceTrigger = (runtime2, triggerEvent) => {
-  runtime2.log("=".repeat(60));
-  runtime2.log("⚖️  WORKFLOW 3: AI REBALANCER");
-  runtime2.log("Trigger: RiskScoreUpdated event (on-chain)");
-  runtime2.log("=".repeat(60));
-  const evm = runtime2.config.evms[0];
-  const addresses = evm.addresses[0];
-  const evmClient = createEvmClient(evm.chainName);
-  let triggerThreatLevel = THREAT_LEVEL.SAFE;
-  try {
-    if (triggerEvent?.data) {
-      const decoded = decodeAbiParameters([
-        { name: "oldScore", type: "uint8" },
-        { name: "newScore", type: "uint8" },
-        { name: "threatLevel", type: "uint8" }
-      ], triggerEvent.data);
-      triggerThreatLevel = Number(decoded[2]);
-    }
-  } catch {
-    runtime2.log("Could not decode trigger event data, proceeding with default");
-  }
-  if (triggerThreatLevel >= THREAT_LEVEL.CRITICAL) {
-    runtime2.log("Threat is CRITICAL — skipping rebalance (Shield Execute will handle)");
-    return JSON.stringify({ status: "skipped", reason: "CRITICAL handled by Shield Execute" });
-  }
-  try {
-    runtime2.log("Reading pool allocations...");
-    const allocCallData = encodeFunctionData({
-      abi: ShieldVault,
-      functionName: "getPoolAllocations"
-    });
-    const allocResult = evmClient.callContract(runtime2, {
-      call: encodeCallMsg({
-        from: zeroAddress,
-        to: addresses.shieldVault,
-        data: allocCallData
-      }),
-      blockNumber: LAST_FINALIZED_BLOCK_NUMBER
-    }).result();
-    const poolsRaw = decodeFunctionResult({
-      abi: ShieldVault,
-      functionName: "getPoolAllocations",
-      data: bytesToHex(allocResult.data)
-    });
-    const pools = poolsRaw.map((p) => ({
-      adapter: p.adapter,
-      tier: Number(p.tier),
-      targetWeight: p.targetWeight,
-      currentAmount: p.currentAmount,
-      isActive: p.isActive
-    }));
-    runtime2.log("Reading risk scores for allocation calculation...");
-    const adapterAddresses = [
-      addresses.aaveAdapter,
-      addresses.compoundAdapter,
-      addresses.morphoAdapter,
-      addresses.yieldMaxAdapter
-    ].filter((addr) => !!addr);
-    const riskInfo = [];
-    for (const addr of adapterAddresses) {
-      try {
-        const callData = encodeFunctionData({
-          abi: RiskRegistry,
-          functionName: "getProtocolRisk",
-          args: [addr]
-        });
-        const result = evmClient.callContract(runtime2, {
-          call: encodeCallMsg({
-            from: zeroAddress,
-            to: addresses.riskRegistry,
-            data: callData
-          }),
-          blockNumber: LAST_FINALIZED_BLOCK_NUMBER
-        }).result();
-        const risk = decodeFunctionResult({
-          abi: RiskRegistry,
-          functionName: "getProtocolRisk",
-          data: bytesToHex(result.data)
-        });
-        riskInfo.push({
-          address: addr,
-          riskScore: Number(risk.riskScore),
-          threatLevel: getThreatLevelLabel(Number(risk.riskScore)),
-          apy: 0n
-        });
-      } catch (err) {
-        runtime2.log(`Error reading risk for ${addr}: ${err}`);
-      }
-    }
-    runtime2.log("Calculating optimal allocations...");
-    const optimal = calculateOptimalAllocations(pools, riskInfo, runtime2.config.shieldConfig);
-    for (const alloc2 of optimal) {
-      runtime2.log(`  ${alloc2.adapter.slice(0, 10)}... → ${alloc2.newWeight / 100}%`);
-    }
-    if (shouldRebalance(pools, optimal, runtime2.config.shieldConfig.rebalanceThresholdScoreChange * 100)) {
-      runtime2.log("Significant allocation change detected — executing rebalance...");
-      for (const alloc2 of optimal) {
-        const updateData = encodeFunctionData({
-          abi: ShieldVault,
-          functionName: "updatePoolWeight",
-          args: [alloc2.adapter, BigInt(alloc2.newWeight)]
-        });
-        evmClient.writeReport(runtime2, {
-          receiver: addresses.shieldVault,
-          report: new Report({ rawReport: updateData })
-        }).result();
-      }
-      const rebalanceData = encodeFunctionData({
-        abi: ShieldVault,
-        functionName: "rebalance"
-      });
-      evmClient.writeReport(runtime2, {
-        receiver: addresses.shieldVault,
-        report: new Report({ rawReport: rebalanceData })
-      }).result();
-      runtime2.log("Rebalance executed successfully");
-      return JSON.stringify({
-        status: "rebalanced",
-        timestamp: Date.now(),
-        newAllocations: optimal
-      });
-    } else {
-      runtime2.log("Allocations within threshold — no rebalance needed");
-      return JSON.stringify({
-        status: "no_rebalance_needed",
-        timestamp: Date.now()
-      });
-    }
-  } catch (err) {
-    runtime2.log(`Rebalancer error: ${err}`);
-    return JSON.stringify({
-      status: "error",
-      error: String(err),
-      timestamp: Date.now()
-    });
-  }
-};
-function createEvmClient3(chainName) {
-  const network248 = getNetwork({
-    chainFamily: "evm",
-    chainSelectorName: chainName,
-    isTestnet: true
-  });
-  if (!network248) {
-    throw new Error(`Network not found: ${chainName}`);
-  }
-  return new ClientCapability(network248.chainSelector.selector);
-}
-function executeWarningProtocol(runtime2, chainName, shieldVaultAddress, adapterAddress, reason, config) {
-  const evmClient = createEvmClient3(chainName);
-  const actions = [];
-  try {
-    runtime2.log(`ShieldExecutor: WARNING — partial withdraw ${config.warningWithdrawPercent / 100}% from ${adapterAddress}`);
-    const txData = encodeFunctionData({
-      abi: ShieldVault,
-      functionName: "partialWithdraw",
-      args: [
-        adapterAddress,
-        BigInt(config.warningWithdrawPercent),
-        reason
-      ]
-    });
-    evmClient.writeReport(runtime2, {
-      receiver: shieldVaultAddress,
-      report: new Report({ rawReport: txData })
-    }).result();
-    actions.push({
-      type: "PARTIAL_WITHDRAW",
-      adapter: adapterAddress,
-      reason,
-      threatLevel: "WARNING"
-    });
-    return {
-      actions,
-      success: true,
-      message: `Partial withdraw (${config.warningWithdrawPercent / 100}%) executed from ${adapterAddress}`
-    };
-  } catch (err) {
-    runtime2.log(`ShieldExecutor: WARNING action failed — ${err}`);
-    return {
-      actions,
-      success: false,
-      message: `WARNING action failed: ${err}`
-    };
-  }
-}
-function executeCriticalProtocol(runtime2, chainName, shieldVaultAddress, adapterAddress, reason) {
-  const evmClient = createEvmClient3(chainName);
-  const actions = [];
-  try {
-    runtime2.log(`ShieldExecutor: CRITICAL — emergency withdraw ALL from ${adapterAddress}`);
-    const txData = encodeFunctionData({
-      abi: ShieldVault,
-      functionName: "emergencyWithdraw",
-      args: [adapterAddress, reason]
-    });
-    evmClient.writeReport(runtime2, {
-      receiver: shieldVaultAddress,
-      report: new Report({ rawReport: txData })
-    }).result();
-    actions.push({
-      type: "EMERGENCY_WITHDRAW",
-      adapter: adapterAddress,
-      reason,
-      threatLevel: "CRITICAL"
-    });
-    return {
-      actions,
-      success: true,
-      message: `Emergency withdraw executed from ${adapterAddress}. Funds moved to safe haven.`
-    };
-  } catch (err) {
-    runtime2.log(`ShieldExecutor: CRITICAL action failed — ${err}`);
-    return {
-      actions,
-      success: false,
-      message: `CRITICAL action failed: ${err}`
-    };
-  }
-}
-var onShieldTrigger = (runtime2, triggerEvent) => {
-  runtime2.log("=".repeat(60));
-  runtime2.log("\uD83D\uDEE1️  WORKFLOW 4: SHIELD EXECUTE (EMERGENCY PROTOCOL)");
-  runtime2.log("Trigger: RiskScoreUpdated event (WARNING/CRITICAL)");
-  runtime2.log("=".repeat(60));
-  const evm = runtime2.config.evms[0];
-  const addresses = evm.addresses[0];
-  const shieldConfig = runtime2.config.shieldConfig;
-  let protocolAddress = "";
-  let threatLevel = 0;
-  let newScore = 0;
-  try {
-    if (triggerEvent?.topics && triggerEvent.topics.length >= 2) {
-      const addrHex = triggerEvent.topics[1];
-      protocolAddress = "0x" + addrHex.slice(-40);
-    }
-    if (triggerEvent?.data) {
-      const decoded = decodeAbiParameters([
-        { name: "oldScore", type: "uint8" },
-        { name: "newScore", type: "uint8" },
-        { name: "threatLevel", type: "uint8" }
-      ], triggerEvent.data);
-      newScore = Number(decoded[1]);
-      threatLevel = Number(decoded[2]);
-    }
-  } catch {
-    runtime2.log("Could not decode trigger event — proceeding with defaults");
-  }
-  const threatLabel = ["SAFE", "WATCH", "WARNING", "CRITICAL"][threatLevel] || "UNKNOWN";
-  runtime2.log(`Protocol: ${protocolAddress}, Score: ${newScore}, Level: ${threatLabel}`);
-  if (threatLevel < THREAT_LEVEL.WARNING) {
-    runtime2.log(`Threat level ${threatLabel} below WARNING — no shield action needed`);
-    return JSON.stringify({
-      status: "no_action",
-      reason: `Threat level ${threatLabel} does not require shield activation`
-    });
-  }
-  if (threatLevel === THREAT_LEVEL.WARNING) {
-    runtime2.log("Executing WARNING protocol — partial withdrawal...");
-    const result = executeWarningProtocol(runtime2, evm.chainName, addresses.shieldVault, protocolAddress, `ShieldYield WARNING: Risk score ${newScore}/100 detected. Partial withdrawal to protect funds.`, shieldConfig);
-    return JSON.stringify({
-      status: "shield_activated",
-      level: "WARNING",
-      timestamp: Date.now(),
-      ...result
-    });
-  }
-  if (threatLevel >= THREAT_LEVEL.CRITICAL) {
-    runtime2.log("Executing CRITICAL protocol — EMERGENCY WITHDRAWAL...");
-    const result = executeCriticalProtocol(runtime2, evm.chainName, addresses.shieldVault, protocolAddress, `ShieldYield CRITICAL: Risk score ${newScore}/100. Emergency withdrawal to protect all funds.`);
-    return JSON.stringify({
-      status: "shield_activated",
-      level: "CRITICAL",
-      timestamp: Date.now(),
-      ...result
-    });
-  }
-  return JSON.stringify({ status: "no_action" });
-};
-var initWorkflow = (config) => {
-  const cron = new CronCapability;
-  const evm = config.evms[0];
-  const addresses = evm.addresses[0];
-  const network248 = getNetwork({
-    chainFamily: "evm",
-    chainSelectorName: evm.chainName,
-    isTestnet: true
-  });
-  if (!network248) {
-    throw new Error(`Network not found: ${evm.chainName}`);
-  }
-  const evmClient = new ClientCapability(network248.chainSelector.selector);
-  const riskUpdateTrigger = evmClient.logTrigger({
-    addresses: [toHex(toBytes(addresses.riskRegistry, { size: 20 }))],
-    topics: [{ values: [RISK_SCORE_UPDATED_SIG] }]
-  });
-  return [
-    handler(cron.trigger({}), onCronTrigger),
-    handler(riskUpdateTrigger, onRebalanceTrigger),
-    handler(riskUpdateTrigger, onShieldTrigger)
-  ];
-};
-async function main() {
-  const runner = await Runner.newRunner();
-  await runner.run(initWorkflow);
-}
 main().catch(sendErrorResponse);
 export {
   main

@@ -1,3 +1,87 @@
 {
-  "schedule": "*/30 * * * * *"
+  "schedule": "*/30 * * * * *",
+  "evms": [
+    {
+      "chainName": "ethereum-testnet-sepolia",
+      "priceFeeds": {
+        "ETH_USD": "0x694AA1769357215DE4FAC081bf1f309aDC325306",
+        "BTC_USD": "0x1b44F3514812d835EB1BDB0acB33d3fA3351Ee43",
+        "USDC_USD": "0xA2F78ab2355fe2f984D808B5CeE7FD0A93D5270E"
+      },
+      "addresses": [
+        {}
+      ]
+    },
+    {
+      "chainName": "ethereum-testnet-sepolia-arbitrum-1",
+      "addresses": [
+        {
+          "mockUSDC": "0x4d107C58DCda55ea6ea2B162d9C434F710E42038",
+          "faucet": "0x6E860FF2C4ea6b01815D74E54859Cdd9DD172256",
+          "riskRegistry": "0xa23BE1297F836FF7D4E3297320ff16dbc7903e6D",
+          "shieldVault": "0xcFBd47c63D284A8F824e586596Df4d5c57326c8B",
+          "shieldBridge": "0xA5D0CF3DC85538FfC93EF8941819e2b1b0460387",
+          "aaveAdapter": "0xB81961aA49d7E834404e299e688B3Dc09a5EFe5a",
+          "compoundAdapter": "0xcc547a2B0f18b34095623809977D54cfe306BEBF",
+          "morphoAdapter": "0x5f8A64Bc67f23b8d5d02c7CFE187AD42D59f1D59",
+          "yieldMaxAdapter": "0x5EbD6F3DA76C2B9C9d6aAC89DA08c388EaB2B3cb"
+        }
+      ]
+    },
+    {
+      "chainName": "ethereum-testnet-sepolia-base-1",
+      "priceFeeds": {
+        "ETH_USD": "0x4aDC67D868764f927053CCF1d0d75aa3a19A3618",
+        "BTC_USD": "0x0FB99723Aee6f420beAD13e6bBB79b7E6F034298",
+        "USDC_USD": "0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165"
+      },
+      "addresses": [
+        {}
+      ]
+    }
+  ],
+  "offchainApis": {
+    "tvlHistoryUrl": "https://namadomain-anda.vercel.app/api/tvl-history",
+    "defiMetricsUrl": "https://namadomain-anda.vercel.app/api/defi-metrics",
+    "primaryProtocol": "AaveAdapter",
+    "goPlusChainId": "42161",
+    "adapters": {
+      "AaveAdapter": {
+        "defiLlamaSlug": "aave",
+        "github": "https://api.github.com/repos/aave/aave-v3-core",
+        "goPlusTokenAddress": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+        "teamWallet": "0xB81961aA49d7E834404e299e688B3Dc09a5EFe5a"
+      },
+      "CompoundAdapter": {
+        "defiLlamaSlug": "compound-v3",
+        "github": "https://api.github.com/repos/compound-finance/comet",
+        "goPlusTokenAddress": "0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA",
+        "teamWallet": "0xcc547a2B0f18b34095623809977D54cfe306BEBF"
+      },
+      "MorphoAdapter": {
+        "defiLlamaSlug": "morpho",
+        "github": "https://api.github.com/repos/morpho-org/morpho-blue",
+        "goPlusTokenAddress": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+        "teamWallet": "0x5f8A64Bc67f23b8d5d02c7CFE187AD42D59f1D59"
+      },
+      "YieldMaxAdapter": {
+        "defiLlamaSlug": "yearn-finance",
+        "github": "https://api.github.com/repos/yearn/yearn-vaults-v3",
+        "goPlusTokenAddress": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+        "teamWallet": "0x5EbD6F3DA76C2B9C9d6aAC89DA08c388EaB2B3cb"
+      }
+    }
+  },
+  "priceFeeds": {
+    "ETH_USD": "0x694AA1769357215DE4FAC081bf1f309aDC325306",
+    "BTC_USD": "0x1b44F3514812d835EB1BDB0acB33d3fA3351Ee43",
+    "USDC_USD": "0x0000000000000000000000000000000000000000"
+  },
+  "shieldConfig": {
+    "warningWithdrawPercent": 3000,
+    "safeHavenAdapter": "aaveAdapter",
+    "maxSingleAdapterAllocation": 5000,
+    "rebalanceThresholdScoreChange": 15
+  },
+  "dashboardApiUrl": "http://localhost:3000/api/monitoring/snapshot"
 }

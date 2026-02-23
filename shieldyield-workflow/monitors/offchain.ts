@@ -13,6 +13,7 @@ import type {
     GithubSignal,
     SecuritySignal,
     TeamWalletSignal,
+    AiSentinelSignal,
     OffchainSignals,
     TvlSignal,
     DefiMetricsSignal,
@@ -79,43 +80,97 @@ export function fetchTvlHistory(
 }
 
 // ========================================
-// FUNGSI 1: Fetch GitHub Activity
+// FUNGSI 1: Fetch AI Sentinel (replaces direct GitHub)
 // ========================================
-function fetchGitHubData(
+// AI Sentinel endpoint internally fetches GitHub + CryptoPanic news + runs GroqAI.
+// CRE gets both GitHub signal + AI analysis from 1 HTTP call.
+
+interface AiSentinelHttpResponse {
+    github: GithubSignal;
+    aiSentinel: AiSentinelSignal;
+}
+
+function fetchAiSentinelData(
     sendRequester: HTTPSendRequester,
-    githubUrl: string
-): GithubSignal {
+    url: string
+): AiSentinelHttpResponse {
+    const defaultGithub: GithubSignal = { recentCommits: 0, openIssues: 0, lastPushDaysAgo: 999 };
+    const defaultAi: AiSentinelSignal = {
+        ai_threat_score: 30,
+        confidence: 0.3,
+        reasoning: "AI Sentinel unavailable — using default moderate score",
+        recommendation: "HOLD",
+        signals: [],
+    };
+
     try {
         const resp = sendRequester
             .sendRequest({
-                url: githubUrl,
+                url,
                 method: "GET" as const,
                 headers: {
                     "User-Agent": "ShieldYield-CRE-Monitor",
+                    "Content-Type": "application/json",
                 },
-                timeout: "8s",
+                timeout: "15s",
             })
             .result();
 
         if (!ok(resp)) {
-            return { recentCommits: 0, openIssues: 0, lastPushDaysAgo: 999 };
+            return { github: defaultGithub, aiSentinel: defaultAi };
         }
 
         const data = json(resp) as any;
 
-        const lastPush = new Date(data.pushed_at || Date.now());
-        const daysSincePush = Math.floor(
-            (Date.now() - lastPush.getTime()) / (1000 * 60 * 60 * 24)
-        );
-
         return {
-            recentCommits: data.open_issues_count || 0,
-            openIssues: data.open_issues_count || 0,
-            lastPushDaysAgo: daysSincePush,
+            github: {
+                recentCommits: Number(data.github?.recentCommits) || 0,
+                openIssues: Number(data.github?.openIssues) || 0,
+                lastPushDaysAgo: Number(data.github?.lastPushDaysAgo) || 999,
+            },
+            aiSentinel: {
+                ai_threat_score: Number(data.ai_threat_score) || 30,
+                confidence: Number(data.confidence) || 0.3,
+                reasoning: String(data.reasoning || ""),
+                recommendation: String(data.recommendation || "HOLD"),
+                signals: Array.isArray(data.signals)
+                    ? data.signals.map((s: any) => ({
+                        source: String(s.source || ""),
+                        signal: String(s.signal || ""),
+                        sentiment: String(s.sentiment || "neutral"),
+                    }))
+                    : [],
+            },
         };
     } catch {
-        return { recentCommits: 0, openIssues: 0, lastPushDaysAgo: 999 };
+        return { github: defaultGithub, aiSentinel: defaultAi };
     }
+}
+
+/**
+ * Fetches AI Sentinel analysis from Next.js proxy.
+ * Returns both GitHub signal (backwards compatible) and AI analysis.
+ */
+export function fetchAiSentinel(
+    runtime: Runtime<any>,
+    aiSentinelUrl: string,
+    protocol: string
+): AiSentinelHttpResponse {
+    const httpClient = new HTTPClient();
+    const url = `${aiSentinelUrl}?protocol=${protocol}`;
+
+    const result = httpClient
+        .sendRequest(
+            runtime,
+            fetchAiSentinelData,
+            ConsensusAggregationByFields<AiSentinelHttpResponse>({
+                github: identical as any,
+                aiSentinel: identical as any,
+            })
+        )(url)
+        .result();
+
+    return result;
 }
 
 // ========================================
@@ -206,32 +261,29 @@ function fetchTeamWalletData(
 // FUNGSI UTAMA: Fetch semua off-chain signals (HTTP only)
 // ========================================
 // Prices are now read on-chain via Chainlink Price Feeds (see price-feeds.ts).
-// This function only handles the 3 HTTP calls: GitHub, GoPlus, Etherscan.
+// This function handles 3 HTTP calls: AI Sentinel (replaces GitHub), GoPlus, Etherscan.
+// AI Sentinel internally fetches GitHub + news + runs GroqAI analysis.
 // The caller (sentinel-scan) injects prices and TVL into the returned object.
 export function fetchAllOffchainSignals(
     runtime: Runtime<any>,
     config: {
-        githubUrl: string;
+        aiSentinelUrl: string;
+        primaryProtocol: string;
         goPlusUrl: string;
         teamWalletUrl: string;
     }
 ): Omit<OffchainSignals, "prices" | "tvl" | "defiMetrics"> {
     const httpClient = new HTTPClient();
 
-    // --- GitHub: Code Risk ---
-    const github = httpClient
-        .sendRequest(
-            runtime,
-            fetchGitHubData,
-            ConsensusAggregationByFields<GithubSignal>({
-                recentCommits: median,
-                openIssues: median,
-                lastPushDaysAgo: median,
-            })
-        )(config.githubUrl)
-        .result();
+    // --- AI Sentinel: GitHub + AI analysis (replaces direct GitHub call) ---
+    const sentinelResult = fetchAiSentinel(runtime, config.aiSentinelUrl, config.primaryProtocol);
+    const github = sentinelResult.github;
+    const aiSentinel = sentinelResult.aiSentinel;
     runtime.log(
-        `📦 GitHub: issues=${github.openIssues}, lastPush=${github.lastPushDaysAgo}d`
+        `🤖 AI Sentinel: score=${aiSentinel.ai_threat_score}, confidence=${aiSentinel.confidence}, rec=${aiSentinel.recommendation}`
+    );
+    runtime.log(
+        `📦 GitHub (via AI): issues=${github.openIssues}, lastPush=${github.lastPushDaysAgo}d`
     );
 
     // --- GoPlus: Security flags ---
@@ -267,7 +319,7 @@ export function fetchAllOffchainSignals(
         `👛 TeamWallet: balance=${teamWallet.balanceEth.toFixed(4)}ETH`
     );
 
-    return { github, security, teamWallet };
+    return { github, security, teamWallet, aiSentinel };
 }
 
 // ========================================
@@ -275,6 +327,22 @@ export function fetchAllOffchainSignals(
 // ========================================
 // Fetches AAVE V3 and Compound V3 lending metrics from the
 // Next.js API proxy. Uses 1 HTTP call (budget: 5/5).
+
+// Default empty metrics — avoids null which crashes CRE `identical` consensus
+const EMPTY_AAVE_METRICS = {
+    totalSupplied: "0",
+    totalBorrowed: "0",
+    supplyApy: 0,
+    borrowApy: 0,
+    utilization: 0,
+};
+const EMPTY_COMPOUND_METRICS = {
+    totalSupply: "0",
+    totalBorrow: "0",
+    utilization: 0,
+    supplyApr: 0,
+    borrowApr: 0,
+};
 
 function fetchDefiMetricsData(
     sendRequester: HTTPSendRequester,
@@ -291,7 +359,7 @@ function fetchDefiMetricsData(
             .result();
 
         if (!ok(resp)) {
-            return { aave: null, compound: null };
+            return { aave: EMPTY_AAVE_METRICS, compound: EMPTY_COMPOUND_METRICS };
         }
 
         const data = json(resp) as any;
@@ -304,7 +372,7 @@ function fetchDefiMetricsData(
                     borrowApy: Number(data.aave.borrowApy) || 0,
                     utilization: Number(data.aave.utilization) || 0,
                 }
-                : null,
+                : EMPTY_AAVE_METRICS,
             compound: data.compound
                 ? {
                     totalSupply: String(data.compound.totalSupply || "0"),
@@ -313,10 +381,10 @@ function fetchDefiMetricsData(
                     supplyApr: Number(data.compound.supplyApr) || 0,
                     borrowApr: Number(data.compound.borrowApr) || 0,
                 }
-                : null,
+                : EMPTY_COMPOUND_METRICS,
         };
     } catch {
-        return { aave: null, compound: null };
+        return { aave: EMPTY_AAVE_METRICS, compound: EMPTY_COMPOUND_METRICS };
     }
 }
 

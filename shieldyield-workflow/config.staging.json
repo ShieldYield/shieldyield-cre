@@ -41,6 +41,7 @@
     }
   ],
   "offchainApis": {
+    "aiSentinelUrl": "http://localhost:3000/api/ai-sentinel",
     "tvlHistoryUrl": "http://localhost:3000/api/tvl-history",
     "defiMetricsUrl": "http://localhost:3000/api/defi-metrics",
     "primaryProtocol": "AaveAdapter",

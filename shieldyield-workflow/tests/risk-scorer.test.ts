@@ -60,6 +60,7 @@ function makeSafeOffchain(): OffchainSignals {
             isMintable: false,
         },
         teamWallet: { balanceEth: 10, recentLargeOutflows: false },
+        aiSentinel: null,
     };
 }
 
@@ -77,6 +78,7 @@ function makeEmergingRiskOffchain(): OffchainSignals {
             isMintable: false,
         },
         teamWallet: { balanceEth: 2, recentLargeOutflows: true },
+        aiSentinel: null,
     };
 }
 
@@ -94,6 +96,7 @@ function makeCriticalOffchain(): OffchainSignals {
             isMintable: true,
         },
         teamWallet: { balanceEth: 0.001, recentLargeOutflows: true },
+        aiSentinel: null,
     };
 }
 
@@ -205,6 +208,85 @@ function runTests() {
     assert(getThreatLevelLabel(75) === "WARNING", "75 → WARNING");
     assert(getThreatLevelLabel(76) === "CRITICAL", "76 → CRITICAL");
     assert(getThreatLevelLabel(100) === "CRITICAL", "100 → CRITICAL");
+
+    // ---- Scenario E: AI Sentinel with high confidence ----
+    console.log("\n🤖 Scenario E: AI Sentinel — High threat + high confidence");
+    console.log("   Healthy adapter + AI threat_score=80, confidence=0.9");
+    const aiHighOffchain = makeSafeOffchain();
+    aiHighOffchain.aiSentinel = {
+        ai_threat_score: 80,
+        confidence: 0.9,
+        reasoning: "Multiple security concerns detected",
+        recommendation: "REDUCE",
+        signals: [{ source: "news", signal: "Exploit reported", sentiment: "negative" }],
+    };
+    const aiHighScore = computeRiskScore(
+        makeHealthyAdapter(), undefined, aiHighOffchain
+    );
+    console.log(`   → Computed Score: ${aiHighScore}`);
+    // AI contributes: round((80/100) * 20 * 0.9) = round(14.4) = 14
+    assert(aiHighScore >= 14, `AI high threat should add ≥14 to score, got ${aiHighScore}`);
+    assert(aiHighScore <= 25, `Safe adapter + AI only should be ≤25 (SAFE), got ${aiHighScore}`);
+
+    // ---- Scenario F: AI Sentinel with low confidence ----
+    console.log("\n🤖 Scenario F: AI Sentinel — High threat + low confidence");
+    console.log("   Healthy adapter + AI threat_score=90, confidence=0.3");
+    const aiLowConfOffchain = makeSafeOffchain();
+    aiLowConfOffchain.aiSentinel = {
+        ai_threat_score: 90,
+        confidence: 0.3,
+        reasoning: "Insufficient data for confident analysis",
+        recommendation: "HOLD",
+        signals: [],
+    };
+    const aiLowConfScore = computeRiskScore(
+        makeHealthyAdapter(), undefined, aiLowConfOffchain
+    );
+    console.log(`   → Computed Score: ${aiLowConfScore}`);
+    // AI contributes: round((90/100) * 20 * 0.3) = round(5.4) = 5
+    assert(aiLowConfScore <= 10, `Low confidence AI should have limited impact, got ${aiLowConfScore}`);
+
+    // ---- Scenario G: AI Safety Guardrail ----
+    console.log("\n🤖 Scenario G: AI Safety Guardrail — AI alone cannot trigger CRITICAL");
+    console.log("   Healthy adapter + moderate off-chain risk + AI threat=100, confidence=1.0");
+    const aiGuardrailOffchain = makeEmergingRiskOffchain();
+    aiGuardrailOffchain.aiSentinel = {
+        ai_threat_score: 100,
+        confidence: 1.0,
+        reasoning: "Critical threat detected by AI",
+        recommendation: "EXIT",
+        signals: [],
+    };
+    const aiGuardrailScore = computeRiskScore(
+        makeHealthyAdapter(), undefined, aiGuardrailOffchain
+    );
+    console.log(`   → Computed Score: ${aiGuardrailScore}`);
+    assert(aiGuardrailScore <= 75, `AI alone should NOT push healthy adapter to CRITICAL (≤75), got ${aiGuardrailScore}`);
+    assert(
+        getThreatLevelLabel(aiGuardrailScore) !== "CRITICAL",
+        `Threat level should NOT be CRITICAL when only AI flags risk, got ${getThreatLevelLabel(aiGuardrailScore)}`
+    );
+
+    // ---- Scenario H: AI + On-chain damage = CRITICAL allowed ----
+    console.log("\n🤖 Scenario H: AI + On-chain damage = CRITICAL allowed");
+    console.log("   Unhealthy adapter + AI threat=100, confidence=1.0");
+    const aiWithDamageOffchain = makeCriticalOffchain();
+    aiWithDamageOffchain.aiSentinel = {
+        ai_threat_score: 100,
+        confidence: 1.0,
+        reasoning: "Critical threat corroborated by on-chain damage",
+        recommendation: "EXIT",
+        signals: [],
+    };
+    const aiWithDamageScore = computeRiskScore(
+        makeUnhealthyAdapter(), undefined, aiWithDamageOffchain
+    );
+    console.log(`   → Computed Score: ${aiWithDamageScore}`);
+    assert(aiWithDamageScore >= 76, `AI + on-chain damage should allow CRITICAL (≥76), got ${aiWithDamageScore}`);
+    assert(
+        getThreatLevelLabel(aiWithDamageScore) === "CRITICAL",
+        `Threat level should be CRITICAL with AI + on-chain damage, got ${getThreatLevelLabel(aiWithDamageScore)}`
+    );
 
     // ---- computeAllRiskScores integration ----
     console.log("\n📊 computeAllRiskScores Integration");

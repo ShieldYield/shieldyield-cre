@@ -37,6 +37,7 @@ export type Config = {
     offchainApis: OffchainApisConfig;
     priceFeeds: PriceFeedsConfig;
     shieldConfig: ShieldConfig;
+    dashboardApiUrl?: string;
 };
 
 // ========================================
