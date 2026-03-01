@@ -175,3 +175,88 @@ export function executeCriticalProtocol(
         };
     }
 }
+
+// ========================================
+// CCIP BRIDGE PROTOCOL: Emergency Escape
+// ========================================
+
+/**
+ * Execute CROSS-CHAIN EMERGENCY PROTOCOL:
+ * - Evacuates funds completely from the current chain to a destination chain via CCIP
+ * - Uses ShieldBridge.emergencyBridge
+ */
+export function executeCriticalBridgeProtocol(
+    runtime: Runtime<any>,
+    chainName: string,
+    shieldBridgeAddress: string,
+    tokenAddress: string,
+    amountToBridge: bigint,
+    destinationChainSelector: bigint,
+    reason: string
+): ShieldResult {
+    const evmClient = createEvmClient(chainName);
+    const actions: ShieldAction[] = [];
+
+    // ShieldVault doesn't have the emergencyBridge function, ShieldBridge does!
+    // But since the action originates here, we'll encode the call for the bridge.
+    // Note: The AI / Keepers must have enough native token (ETH) to pay CCIP fees.
+
+    // We import ShieldBridge ABI dynamically or define the partial ABI here 
+    // since it's not currently imported at the top of the file.
+    const partialShieldBridgeAbi = [
+        {
+            name: "emergencyBridge",
+            type: "function",
+            stateMutability: "payable",
+            inputs: [
+                { name: "token", type: "address" },
+                { name: "amount", type: "uint256" },
+                { name: "destinationChainSelector", type: "uint64" },
+            ],
+            outputs: [{ name: "messageId", type: "bytes32" }],
+        },
+    ] as const;
+
+    try {
+        runtime.log(
+            `ShieldExecutor: CROSS-CHAIN ESCAPE — bridging ${amountToBridge} of ${tokenAddress} to chain ${destinationChainSelector}`
+        );
+
+        const txData = encodeFunctionData({
+            abi: partialShieldBridgeAbi,
+            functionName: "emergencyBridge",
+            args: [tokenAddress as Address, amountToBridge, BigInt(destinationChainSelector)],
+        });
+
+        // CRE writeReport
+        // Note: For payable functions requiring fee calculation, CRE might need an
+        // advanced plugin or the Keepers top-up the contract beforehand. 
+        // We report this payload to the bridge.
+        evmClient
+            .writeReport(runtime, {
+                receiver: shieldBridgeAddress,
+                report: new Report({ rawReport: txData }),
+            })
+            .result();
+
+        actions.push({
+            type: "BRIDGE",
+            adapter: tokenAddress, // using token address as target here
+            reason,
+            threatLevel: "CRITICAL_CROSS_CHAIN",
+        });
+
+        return {
+            actions,
+            success: true,
+            message: `Cross-chain emergency bridge initiated for token ${tokenAddress} to chain ${destinationChainSelector}.`,
+        };
+    } catch (err) {
+        runtime.log(`ShieldExecutor: BRIDGE action failed — ${err}`);
+        return {
+            actions,
+            success: false,
+            message: `BRIDGE action failed: ${err}`,
+        };
+    }
+}
