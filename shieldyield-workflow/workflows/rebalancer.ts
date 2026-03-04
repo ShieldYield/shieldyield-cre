@@ -35,7 +35,8 @@ export const onRebalanceTrigger = (runtime: Runtime<Config>, triggerEvent: any):
     runtime.log("Trigger: RiskScoreUpdated event (on-chain)");
     runtime.log("=".repeat(60));
 
-    const evm = runtime.config.evms[0];
+    // Fix: We must select the Arbitrum Sepolia config (index 1) where our addresses are
+    const evm = runtime.config.evms.find(e => e.chainName === "ethereum-testnet-sepolia-arbitrum-1") || runtime.config.evms[0];
     const addresses = evm.addresses[0];
     const evmClient = createEvmClient(evm.chainName);
 

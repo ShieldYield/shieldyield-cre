@@ -3,6 +3,7 @@ import {
 } from "@chainlink/cre-sdk";
 import {
     decodeAbiParameters,
+    toHex,
 } from "viem";
 
 import {
@@ -22,7 +23,8 @@ export const onShieldTrigger = (runtime: Runtime<Config>, triggerEvent: any): st
     runtime.log("Trigger: RiskScoreUpdated event (WARNING/CRITICAL)");
     runtime.log("=".repeat(60));
 
-    const evm = runtime.config.evms[0];
+    // Fix: We must select the Arbitrum Sepolia config (index 1) where our addresses are
+    const evm = runtime.config.evms.find(e => e.chainName === "ethereum-testnet-sepolia-arbitrum-1") || runtime.config.evms[0];
     const addresses = evm.addresses[0];
     const shieldConfig = runtime.config.shieldConfig;
 
@@ -35,7 +37,10 @@ export const onShieldTrigger = (runtime: Runtime<Config>, triggerEvent: any): st
     try {
         if (triggerEvent?.topics && triggerEvent.topics.length >= 2) {
             // topics[0] = event sig, topics[1] = indexed protocol address
-            const addrHex = triggerEvent.topics[1];
+            // Note: CRE SDK passes topics as Uint8Array!
+            const addrHex = typeof triggerEvent.topics[1] === "string"
+                ? triggerEvent.topics[1]
+                : toHex(triggerEvent.topics[1]);
             protocolAddress = "0x" + addrHex.slice(-40);
         }
 
@@ -82,6 +87,7 @@ export const onShieldTrigger = (runtime: Runtime<Config>, triggerEvent: any): st
         return JSON.stringify({
             status: "shield_activated",
             level: "WARNING",
+            workflowId: "0xe1a46d08013e5749b754effd2bd197ceccfb18a0efdc9cacb8bded35b965910",
             timestamp: Date.now(),
             ...result,
         });
@@ -101,6 +107,7 @@ export const onShieldTrigger = (runtime: Runtime<Config>, triggerEvent: any): st
         return JSON.stringify({
             status: "shield_activated",
             level: "CRITICAL",
+            workflowId: "0xe1a46d08013e5749b754effd2bd197ceccfb18a0efdc9cacb8bded35b965910",
             timestamp: Date.now(),
             ...result,
         });

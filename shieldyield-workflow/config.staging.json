@@ -24,7 +24,8 @@
           "aaveAdapter": "0xB81961aA49d7E834404e299e688B3Dc09a5EFe5a",
           "compoundAdapter": "0xcc547a2B0f18b34095623809977D54cfe306BEBF",
           "morphoAdapter": "0x5f8A64Bc67f23b8d5d02c7CFE187AD42D59f1D59",
-          "yieldMaxAdapter": "0x5EbD6F3DA76C2B9C9d6aAC89DA08c388EaB2B3cb"
+          "yieldMaxAdapter": "0x5EbD6F3DA76C2B9C9d6aAC89DA08c388EaB2B3cb",
+          "workflowLogger": "0xc874515881928b0ef35164843542f91d9ccfd2f3"
         }
       ]
     },

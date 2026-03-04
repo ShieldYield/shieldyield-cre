@@ -19,7 +19,8 @@ import { onShieldTrigger } from "./workflows/shield-execute";
 const initWorkflow = (config: Config) => {
   const cron = new CronCapability();
 
-  const evm = config.evms[0];
+  // Fix: We must select the Arbitrum Sepolia config (index 1) where our addresses are
+  const evm = config.evms.find(e => e.chainName === "ethereum-testnet-sepolia-arbitrum-1") || config.evms[0];
   const addresses = evm.addresses[0];
 
   // Create EVMClient for log triggers
