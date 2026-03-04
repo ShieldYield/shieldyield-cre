@@ -4,14 +4,25 @@
   "main": "dist/main.js",
   "private": true,
   "scripts": {
-    "postinstall": "bun x cre-setup"
+    "postinstall": "bun x cre-setup",
+    "sim:daemon": "bun simulation/sim-daemon.ts",
+    "sim:daemon:byzantine": "BYZANTINE_NODES=7,14 bun simulation/sim-daemon.ts",
+    "sim:inject": "bun simulation/sim-inject.ts",
+    "sim:inject:warning": "bun simulation/sim-inject.ts warning --trigger",
+    "sim:inject:critical": "bun simulation/sim-inject.ts critical --trigger",
+    "sim:inject:exploit": "bun simulation/sim-inject.ts exploit --trigger",
+    "sim:inject:deposit": "bun simulation/sim-inject.ts deposit --trigger",
+    "sim:inject:clear": "bun simulation/sim-inject.ts clear --trigger",
+    "sim:status": "bun simulation/sim-inject.ts status"
   },
   "license": "UNLICENSED",
   "dependencies": {
     "@chainlink/cre-sdk": "^1.0.9",
-    "@chainlink/data-streams-sdk": "^1.2.1"
+    "@chainlink/data-streams-sdk": "^1.2.1",
+    "viem": "^2.0.0"
   },
   "devDependencies": {
-    "@types/bun": "1.2.21"
+    "@types/bun": "1.2.21",
+    "tsx": "^4.0.0"
   }
 }
