@@ -26,7 +26,7 @@ import type {
 export function computeRiskScore(
     adapter: AdapterSnapshot,
     currentRisk: ProtocolRiskSnapshot | undefined,
-    offchain: OffchainSignals
+    offchain: OffchainSignals | null
 ): number {
     let score = 0;
     let onChainDamage = false; // Track if on-chain signals indicate real damage
@@ -54,6 +54,15 @@ export function computeRiskScore(
     if (adapter.principal > 0n && adapter.balance === 0n) {
         score += 10; // Had principal but balance is gone → possible exploit
         onChainDamage = true;
+    }
+
+    // =============================================
+    // IF NOT TARGETED FOR OFF-CHAIN (ROUND-ROBIN)
+    // =============================================
+    if (!offchain) {
+        // Return previous score, but instantly react if on-chain damage pushes score higher
+        const previousScore = currentRisk ? currentRisk.riskScore : 0;
+        return Math.min(100, Math.max(score, previousScore));
     }
 
     // =============================================
@@ -153,13 +162,16 @@ export function getThreatLevelLabel(score: number): string {
 export function computeAllRiskScores(
     adapters: AdapterSnapshot[],
     risks: ProtocolRiskSnapshot[],
-    offchain: OffchainSignals
+    offchain: OffchainSignals,
+    targetedProtocol: string
 ): Record<string, { score: number; level: string }> {
     const result: Record<string, { score: number; level: string }> = {};
 
     for (const adapter of adapters) {
         const currentRisk = risks.find((r) => r.address === adapter.address);
-        const score = computeRiskScore(adapter, currentRisk, offchain);
+        // Only pass offchain signals to the currently targeted protocol
+        const adapterOffchain = adapter.name === targetedProtocol ? offchain : null;
+        const score = computeRiskScore(adapter, currentRisk, adapterOffchain);
         result[adapter.name] = {
             score,
             level: getThreatLevelLabel(score),

@@ -202,21 +202,50 @@ export const onCronTrigger = (runtime: Runtime<Config>): string => {
     runtime.log(`🔍 Risk Assessment — ${primaryChainName}`);
     runtime.log(`   Adapters: ${primaryChainAdapters.length}, Prices: ETH=$${primaryChainPrices.ethUsd.toFixed(2)} BTC=$${primaryChainPrices.btcUsd.toFixed(2)} USDC=$${primaryChainPrices.usdcUsd.toFixed(6)}`);
 
+    const apisConfig = runtime.config.offchainApis;
+    const availableProtocols = Object.keys(apisConfig.adapters);
+
+    // --- Dynamic Target Protocol Selection ---
+    let targetedProtocol = "";
+
+    // 1. Prioritize adapters with on-chain anomalies
+    for (const a of primaryChainAdapters) {
+        if (!a.isHealthy || a.apy === 0n || a.apy > 5000n || (a.principal > 0n && a.balance === 0n)) {
+            if (availableProtocols.includes(a.name)) {
+                targetedProtocol = a.name;
+                runtime.log(`🚨 On-chain anomaly detected for ${a.name}, prioritizing for AI Analysis`);
+                break;
+            }
+        }
+    }
+
+    // 2. Round-Robin fallback
+    if (!targetedProtocol && availableProtocols.length > 0) {
+        // Cycle every 5 minutes (assuming cron triggers ~5min)
+        const cycleIndex = Math.floor(Date.now() / (1000 * 60 * 5)) % availableProtocols.length;
+        targetedProtocol = availableProtocols[cycleIndex];
+        runtime.log(`🔄 Routine AI Analysis round-robin selected: ${targetedProtocol}`);
+    }
+
+    if (!targetedProtocol) {
+        targetedProtocol = apisConfig.primaryProtocol; // Ultimate fallback
+    }
+
     // ---- Fetch Off-Chain Signals (HTTP: GitHub, GoPlus, Etherscan) ----
     runtime.log("Fetching off-chain signals...");
-    const apisConfig = runtime.config.offchainApis;
-    const primaryAdapter = apisConfig.adapters[apisConfig.primaryProtocol];
-    if (!primaryAdapter) {
-        runtime.log(`ERROR: Primary protocol '${apisConfig.primaryProtocol}' not found in adapter config`);
-        return JSON.stringify({ status: "error", error: "Invalid primaryProtocol config" });
+    const targetAdapterConfig = apisConfig.adapters[targetedProtocol];
+    if (!targetAdapterConfig) {
+        runtime.log(`ERROR: Protocol '${targetedProtocol}' not found in adapter config`);
+        return JSON.stringify({ status: "error", error: "Invalid protocol config" });
     }
-    const goPlusUrl = `https://api.gopluslabs.io/api/v1/token_security/${apisConfig.goPlusChainId}?contract_addresses=${primaryAdapter.goPlusTokenAddress}`;
-    const teamWalletUrl = `https://api.arbiscan.io/api?module=account&action=balance&address=${primaryAdapter.teamWallet}&tag=latest&apikey=YourApiKeyToken`;
 
-    runtime.log(`Using primary protocol: ${apisConfig.primaryProtocol}`);
+    const goPlusUrl = `https://api.gopluslabs.io/api/v1/token_security/${apisConfig.goPlusChainId}?contract_addresses=${targetAdapterConfig.goPlusTokenAddress}`;
+    const teamWalletUrl = `https://api.arbiscan.io/api?module=account&action=balance&address=${targetAdapterConfig.teamWallet}&tag=latest&apikey=YourApiKeyToken`;
+
+    runtime.log(`Using target protocol: ${targetedProtocol}`);
     const httpSignals = fetchAllOffchainSignals(runtime, {
         aiSentinelUrl: apisConfig.aiSentinelUrl,
-        primaryProtocol: apisConfig.primaryProtocol,
+        primaryProtocol: targetedProtocol,
         goPlusUrl,
         teamWalletUrl,
     });
@@ -284,7 +313,7 @@ export const onCronTrigger = (runtime: Runtime<Config>): string => {
 
     // ---- Compute Risk Scores ----
     runtime.log("Computing risk scores...");
-    const riskScores = computeAllRiskScores(primaryChainAdapters, [], offchain);
+    const riskScores = computeAllRiskScores(primaryChainAdapters, [], offchain, targetedProtocol);
 
     for (const [name, { score, level }] of Object.entries(riskScores)) {
         runtime.log(`${name}: score=${score}/100, level=${level}`);
