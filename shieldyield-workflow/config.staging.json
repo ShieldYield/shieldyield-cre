@@ -37,7 +37,17 @@
         "USDC_USD": "0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165"
       },
       "addresses": [
-        {}
+        {
+          "mockUSDC": "0xe7a60289d7CB903a11ed84f507c9D4936Da347D3",
+          "faucet": "0x8Df108C2357123DAA0a6D842b50f1F370e9a7c61",
+          "riskRegistry": "0xd326C6c99C2539C4889Cd237aD0A05225eD8ED10",
+          "shieldVault": "0x61A40b866cAE11aC17986FbEeb9c700f4c8F088B",
+          "shieldBridge": "0xE665F22b138191Cf6B9C534f8206D05A09d016b5",
+          "aaveAdapter": "0xe7A9d43cb9D751995E18884D58a6D5fE53B479F2",
+          "compoundAdapter": "0xF32aF905922fbCcF5fCe4B843115F70fE28C6c34",
+          "morphoAdapter": "0xe99FeF6a4670597053544F1923B6485ba9DeA27E",
+          "yieldMaxAdapter": "0xC7e1F2d8B24F1740e0b7b1Bb5a7E41633BE361FA"
+        }
       ]
     }
   ],

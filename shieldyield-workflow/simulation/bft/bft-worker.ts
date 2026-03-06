@@ -206,7 +206,7 @@ async function runNode(): Promise<NodeResult> {
         };
 
         // ── 7. Hitung scores via pure functions dari kode CRE asli ─────────
-        const riskScores      = computeAllRiskScores(adapters, [], offchain);
+        const riskScores      = computeAllRiskScores(adapters, [], offchain, primaryProtocol);
         const anomalies       = detectAllAnomalies(adapters, offchain);
         const highestSeverity = getHighestSeverity(anomalies);
 

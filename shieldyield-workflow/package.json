@@ -18,7 +18,9 @@
     "sim:broadcast:production": "cd .. && bunx cre workflow simulate ./shieldyield-workflow --target=production-settings --broadcast",
     "sim:inject-medium": "bun simulation/sim-inject-medium.ts",
     "sim:inject-critical": "bun simulation/sim-inject-critical.ts",
-    "sim:bft": "bun simulation/sim-bft.ts"
+    "sim:bft": "bun simulation/sim-bft.ts",
+    "sim:workflow3": "bun simulation/sim-workflow3.ts",
+    "sim:workflow4": "bun simulation/sim-workflow4.ts"
   },
   "license": "UNLICENSED",
   "dependencies": {

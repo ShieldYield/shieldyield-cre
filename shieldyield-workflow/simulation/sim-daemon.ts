@@ -24,7 +24,9 @@ import { privateKeyToAccount } from "viem/accounts";
 import { arbitrumSepolia } from "viem/chains";
 
 import { RiskRegistry } from "../../contracts/abi";
-import { startMockVarianceServer } from "./bft/mock-variance-server";
+import { startMockVarianceServer, MOCK_SERVER_PORT } from "./bft/mock-variance-server";
+import { readAllAdaptersSim, readPriceFeedsSim, createSimPublicClient } from "./sim-reader";
+import { runBftRound, type BftConfig } from "./bft/bft-runner";
 
 // ─────────────────────────────────────────────────
 // CONFIG
@@ -39,6 +41,7 @@ const CRON_MS = 30_000;
 
 const arbEvm = config.evms.find((e: any) => e.chainName === "ethereum-testnet-sepolia-arbitrum-1");
 const addresses = arbEvm?.addresses[0] || {};
+const priceFeeds = arbEvm?.priceFeeds || config.priceFeeds || {};
 
 if (!PRIVATE_KEY) {
     console.error("[DAEMON] ERROR: Set CRE_ETH_PRIVATE_KEY=0x...");
@@ -52,6 +55,7 @@ if (!PRIVATE_KEY) {
 const account = privateKeyToAccount(PRIVATE_KEY as `0x${string}`);
 const walletClient = createWalletClient({ account, chain: arbitrumSepolia, transport: http(RPC_URL) });
 const publicClient = createPublicClient({ chain: arbitrumSepolia, transport: http(RPC_URL) });
+const simClient = createSimPublicClient(RPC_URL);
 
 // ─────────────────────────────────────────────────
 // ADAPTER ADDRESS MAP
@@ -169,13 +173,109 @@ async function runCycle() {
     }
 
     // Parse risk scores from CRE output
-    const scores = parseRiskScores(output);
+    let scores = parseRiskScores(output);
     if (scores.length === 0) {
         log("CRON", "No risk scores found in simulation output — skipping write.", C.yellow);
         return;
     }
 
     log("CRON", `Parsed ${scores.length} risk scores: ${scores.map(s => `${s.name}=${s.score}`).join(", ")}`, C.dim);
+
+    // ── BFT Consensus Round ──────────────────────────────────────────────────
+    // 21-node DON simulation reaches consensus before committing to chain.
+    log("BFT", "Starting 21-node BFT consensus round...", C.cyan);
+    try {
+        const adapters = await readAllAdaptersSim(simClient, addresses);
+        const prices = await readPriceFeedsSim(simClient, priceFeeds);
+
+        let totalBalance = 0n;
+        for (const a of adapters) totalBalance += a.balance;
+        const currentTvl = Number(totalBalance) * (prices.usdcUsd || 1.0) / 1e6;
+
+        // Determine which protocol is targeted (for BFT primary focus)
+        let targetedProtocol = "AaveAdapter";
+        try {
+            const stateRes = await fetch(`http://localhost:${MOCK_SERVER_PORT}/inject-state`, {
+                signal: AbortSignal.timeout(500),
+            });
+            if (stateRes.ok) {
+                const { scenario } = await stateRes.json() as { scenario?: { label?: string } | null };
+                const lbl = scenario?.label?.toLowerCase() ?? "";
+                if (lbl.includes("morpho")) targetedProtocol = "MorphoAdapter";
+                else if (lbl.includes("yieldmax")) targetedProtocol = "YieldMaxAdapter";
+                else if (lbl.includes("compound")) targetedProtocol = "CompoundAdapter";
+            }
+        } catch { /* no inject active */ }
+
+        const bftCfg: BftConfig = {
+            mockBaseUrl: `http://localhost:${MOCK_SERVER_PORT}`,
+            directApis: { goPlusUrl: "", teamWalletUrl: "" },
+            primaryProtocol: targetedProtocol,
+            currentTvl,
+            timestamp: Math.floor(Date.now() / 1000),
+        };
+
+        const consensus = await runBftRound(bftCfg, adapters);
+
+        if (consensus.reached) {
+            log("BFT", `✅ Consensus reached! Severity: ${consensus.highestSeverity || "SAFE"}`, C.green);
+
+            // Replace CRE+inject scores with BFT median consensus scores
+            const bftScores: ParsedScore[] = [];
+            for (const [name, { score }] of Object.entries(consensus.medianScores)) {
+                const addr = ADAPTER_ADDRESSES[name];
+                if (addr) {
+                    bftScores.push({
+                        name,
+                        address: addr,
+                        score,
+                        reason: consensus.highestSeverity
+                            ? `BFT Consensus [${consensus.highestSeverity}]: ${name} threat confirmed by 21-node DON`
+                            : `BFT Consensus [SAFE]: Routine evaluation`,
+                    });
+                }
+            }
+            if (bftScores.length > 0) {
+                log("BFT", `Using BFT scores: ${bftScores.map(s => `${s.name}=${s.score}`).join(", ")}`, C.green);
+                scores = bftScores;
+            }
+        } else {
+            log("BFT", "⚠️  BFT consensus NOT reached — falling back to CRE+inject scores", C.yellow);
+        }
+    } catch (err: any) {
+        log("BFT", `BFT round failed (${err?.message}) — using CRE scores`, C.yellow);
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // ── Apply inject overrides on top of BFT scores ──────────────────────────
+    // BFT computes natural scores; inject demo scenario forces the targeted
+    // adapter to its defined severity level so the on-chain state reflects the demo.
+    const INJECT_OVERRIDES: Record<string, { name: string; score: number; reason: string }> = {
+        warning:  { name: "MorphoAdapter",   score: 65, reason: "INJECTED: AI Detected Suspicious GitHub Activity on Morpho (WARNING)" },
+        critical: { name: "YieldMaxAdapter", score: 85, reason: "INJECTED: Massive TVL Outflow on YieldMax - Bank Run (CRITICAL)" },
+    };
+    try {
+        const mockRes = await fetch("http://localhost:3099/inject-state", {
+            signal: AbortSignal.timeout(500),
+        });
+        if (mockRes.ok) {
+            const { scenario } = await mockRes.json() as { scenario?: { type?: string } | null };
+            const override = scenario?.type ? INJECT_OVERRIDES[scenario.type] : undefined;
+            if (override && ADAPTER_ADDRESSES[override.name]) {
+                const existing = scores.findIndex(s => s.name === override.name);
+                const injectedScore: ParsedScore = {
+                    name: override.name,
+                    address: ADAPTER_ADDRESSES[override.name],
+                    score: override.score,
+                    reason: override.reason,
+                };
+                if (existing >= 0) scores[existing] = injectedScore;
+                else scores = [...scores, injectedScore];
+                log("INJECT", `${override.name} → ${override.score}/100 (${scenario?.type?.toUpperCase()}) applied over BFT scores`, C.yellow);
+            }
+        }
+    } catch { /* mock server not running */ }
+    // ─────────────────────────────────────────────────────────────────────────
 
     // Write directly to RiskRegistry via viem
     await writeRiskScores(scores);

@@ -18,6 +18,7 @@ async function main() {
         description: "Detected >20% TVL drop. Suspected exploit or bank run in progress.",
         // A drop of more than 20% triggers the BANK_RUN anomaly (CRITICAL)
         tvlChangePercent: -25.5,
+        aiScore: 90,
     };
 
     console.log(`\n${C.red}${"═".repeat(60)}${C.r}`);

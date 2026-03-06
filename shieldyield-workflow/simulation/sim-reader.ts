@@ -9,7 +9,7 @@
  * ─────────────────────────────────────────────────────────────
  */
 
-import { createPublicClient, http, type Address } from "viem";
+import { createPublicClient, http, type Address, type Chain } from "viem";
 import { arbitrumSepolia } from "viem/chains";
 
 import {
@@ -27,9 +27,9 @@ const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 // CLIENT FACTORY
 // ─────────────────────────────────────────────────
 
-export function createSimPublicClient(rpcUrl: string) {
+export function createSimPublicClient(rpcUrl: string, chain: Chain = arbitrumSepolia) {
     return createPublicClient({
-        chain: arbitrumSepolia,
+        chain,
         transport: http(rpcUrl),
     });
 }

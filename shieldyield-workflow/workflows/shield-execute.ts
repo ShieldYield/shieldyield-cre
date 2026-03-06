@@ -9,9 +9,13 @@ import {
 import {
     executeWarningProtocol,
     executeCriticalProtocol,
+    executeCriticalBridgeProtocol,
 } from "../shield";
 
 import { THREAT_LEVEL, type Config } from "../types/config";
+
+// Base Sepolia CCIP chain selector
+const BASE_SEPOLIA_SELECTOR = 10344971235874465080n;
 
 // ========================================
 // WORKFLOW 4: SHIELD EXECUTE (LOG TRIGGER)
@@ -94,9 +98,9 @@ export const onShieldTrigger = (runtime: Runtime<Config>, triggerEvent: any): st
     }
 
     if (threatLevel >= THREAT_LEVEL.CRITICAL) {
-        // CRITICAL: Full emergency withdraw
+        // CRITICAL step 1: Emergency withdraw from risky adapter on Arbitrum
         runtime.log("Executing CRITICAL protocol — EMERGENCY WITHDRAWAL...");
-        const result = executeCriticalProtocol(
+        const withdrawResult = executeCriticalProtocol(
             runtime,
             evm.chainName,
             addresses.shieldVault!,
@@ -104,12 +108,55 @@ export const onShieldTrigger = (runtime: Runtime<Config>, triggerEvent: any): st
             `ShieldYield CRITICAL: Risk score ${newScore}/100. Emergency withdrawal to protect all funds.`
         );
 
+        // CRITICAL step 2: CCIP bridge funds from Arbitrum → Base Sepolia
+        // On Base: ShieldBridge.ccipReceive() → ShieldVault.depositFor() → Aave + Compound adapters
+        const baseEvm = runtime.config.evms.find(e => e.chainName === "ethereum-testnet-sepolia-base-1");
+        const baseAddresses = baseEvm?.addresses[0];
+
+        if (addresses.shieldBridge && baseAddresses?.shieldVault && addresses.mockUSDC) {
+            runtime.log("Initiating CCIP bridge: Arbitrum Sepolia → Base Sepolia...");
+            runtime.log(`  Arb ShieldBridge: ${addresses.shieldBridge}`);
+            runtime.log(`  Base safe haven (ShieldVault): ${baseAddresses.shieldVault}`);
+            runtime.log(`  Base Aave adapter: ${baseAddresses.aaveAdapter}`);
+            runtime.log(`  Base Compound adapter: ${baseAddresses.compoundAdapter}`);
+
+            const bridgeResult = executeCriticalBridgeProtocol(
+                runtime,
+                evm.chainName,
+                addresses.shieldBridge,
+                addresses.mockUSDC,
+                0n, // full balance — ShieldVault determines amount
+                BASE_SEPOLIA_SELECTOR,
+                `CCIP Emergency: Evacuating to Base Sepolia. Risk score ${newScore}/100.`
+            );
+
+            runtime.log(`CCIP bridge: ${bridgeResult.message}`);
+
+            return JSON.stringify({
+                status: "shield_activated",
+                level: "CRITICAL",
+                workflowId: "0xe1a46d08013e5749b754effd2bd197ceccfb18a0efdc9cacb8bded35b965910",
+                timestamp: Date.now(),
+                withdraw: withdrawResult,
+                bridge: {
+                    ...bridgeResult,
+                    sourceChain: "Arbitrum Sepolia",
+                    destinationChain: "Base Sepolia",
+                    destinationVault: baseAddresses.shieldVault,
+                    safeHavenAdapters: {
+                        aave: baseAddresses.aaveAdapter,
+                        compound: baseAddresses.compoundAdapter,
+                    },
+                },
+            });
+        }
+
         return JSON.stringify({
             status: "shield_activated",
             level: "CRITICAL",
             workflowId: "0xe1a46d08013e5749b754effd2bd197ceccfb18a0efdc9cacb8bded35b965910",
             timestamp: Date.now(),
-            ...result,
+            ...withdrawResult,
         });
     }
 
