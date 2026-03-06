@@ -1,11 +1,6 @@
 import {
     type Runtime,
-    Report,
 } from "@chainlink/cre-sdk";
-import {
-    type Address,
-    encodeFunctionData,
-} from "viem";
 
 import {
     readAllAdapters,
@@ -20,7 +15,6 @@ import {
 } from "../monitors";
 import type { OffchainSignals, PriceSignal, DefiMetricsSignal } from "../monitors";
 
-import { RiskRegistry } from "../../contracts/abi";
 import { createEvmClient, type Config } from "../types/config";
 
 // CRE limits
@@ -333,19 +327,8 @@ export const onCronTrigger = (runtime: Runtime<Config>): string => {
         runtime.log("No anomalies detected");
     }
 
-    // ---- Write Risk Scores On-Chain (if significant change) ----
-    const hasWarningOrCritical = Object.values(riskScores).some(
-        (r) => r.level === "WARNING" || r.level === "CRITICAL"
-    );
-
-    if (hasWarningOrCritical && primaryAddresses.riskRegistry) {
-        runtime.log("WARNING/CRITICAL detected — updating on-chain risk scores...");
-
-        const evmClient = createEvmClient(primaryChainName);
-        const protocols: Address[] = [];
-        const scores: number[] = [];
-        const reasons: string[] = [];
-
+    // ---- Log On-Chain Write Payload (daemon handles actual write) ----
+    if (primaryAddresses.riskRegistry) {
         const adapterNameToAddress: Record<string, string | undefined> = {
             AaveAdapter: primaryAddresses.aaveAdapter,
             CompoundAdapter: primaryAddresses.compoundAdapter,
@@ -353,38 +336,20 @@ export const onCronTrigger = (runtime: Runtime<Config>): string => {
             YieldMaxAdapter: primaryAddresses.yieldMaxAdapter,
         };
 
+        runtime.log(`📝 On-chain write payload → RiskRegistry: ${primaryAddresses.riskRegistry}`);
+        runtime.log(`   Function: batchUpdateRiskScores(protocols[], scores[], reasons[])`);
+        let i = 0;
         for (const [name, { score, level }] of Object.entries(riskScores)) {
             const addr = adapterNameToAddress[name];
             if (addr) {
-                protocols.push(addr as Address);
-                scores.push(score);
-
                 const adapterAnomalies = anomalies.filter((a) => a.adapter === name);
                 const reason =
                     adapterAnomalies.length > 0
                         ? adapterAnomalies.map((a) => `${a.type}: ${a.message}`).join("; ")
                         : `Risk score: ${score}, Level: ${level}`;
-                reasons.push(reason);
+                runtime.log(`   [${i}] ${name} (${addr}): score=${score}, reason="${reason}"`);
+                i++;
             }
-        }
-
-        try {
-            const txData = encodeFunctionData({
-                abi: RiskRegistry,
-                functionName: "batchUpdateRiskScores",
-                args: [protocols, scores, reasons],
-            });
-
-            evmClient
-                .writeReport(runtime, {
-                    receiver: primaryAddresses.riskRegistry,
-                    report: new Report({ rawReport: txData }),
-                })
-                .result();
-
-            runtime.log("Risk scores written on-chain successfully");
-        } catch (err) {
-            runtime.log(`Failed to write risk scores on-chain: ${err}`);
         }
     }
 

@@ -13,7 +13,9 @@
     "sim:inject:exploit": "bun simulation/sim-inject.ts exploit --trigger",
     "sim:inject:deposit": "bun simulation/sim-inject.ts deposit --trigger",
     "sim:inject:clear": "bun simulation/sim-inject.ts clear --trigger",
-    "sim:status": "bun simulation/sim-inject.ts status"
+    "sim:status": "bun simulation/sim-inject.ts status",
+    "sim:broadcast:staging": "cd .. && bunx cre workflow simulate ./shieldyield-workflow --target=staging-settings --broadcast",
+    "sim:broadcast:production": "cd .. && bunx cre workflow simulate ./shieldyield-workflow --target=production-settings --broadcast"
   },
   "license": "UNLICENSED",
   "dependencies": {

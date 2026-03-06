@@ -62,8 +62,7 @@ export function readAdapterSnapshot(
                 from: zeroAddress,
                 to: adapterAddress as Address,
                 data: apyCallData,
-            }),
-            blockNumber: LAST_FINALIZED_BLOCK_NUMBER,
+            })
         })
         .result();
 
@@ -85,8 +84,7 @@ export function readAdapterSnapshot(
                 from: zeroAddress,
                 to: adapterAddress as Address,
                 data: healthCallData,
-            }),
-            blockNumber: LAST_FINALIZED_BLOCK_NUMBER,
+            })
         })
         .result();
 
@@ -109,8 +107,7 @@ export function readAdapterSnapshot(
                 from: zeroAddress,
                 to: adapterAddress as Address,
                 data: breakdownCallData,
-            }),
-            blockNumber: LAST_FINALIZED_BLOCK_NUMBER,
+            })
         })
         .result();
 
@@ -204,8 +201,7 @@ export function readProtocolRisk(
                 from: zeroAddress,
                 to: registryAddress as Address,
                 data: callData,
-            }),
-            blockNumber: LAST_FINALIZED_BLOCK_NUMBER,
+            })
         })
         .result();
 

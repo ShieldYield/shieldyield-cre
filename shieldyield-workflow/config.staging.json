@@ -16,15 +16,15 @@
       "chainName": "ethereum-testnet-sepolia-arbitrum-1",
       "addresses": [
         {
-          "mockUSDC": "0x4d107C58DCda55ea6ea2B162d9C434F710E42038",
-          "faucet": "0x6E860FF2C4ea6b01815D74E54859Cdd9DD172256",
-          "riskRegistry": "0xa23BE1297F836FF7D4E3297320ff16dbc7903e6D",
-          "shieldVault": "0xcFBd47c63D284A8F824e586596Df4d5c57326c8B",
-          "shieldBridge": "0xA5D0CF3DC85538FfC93EF8941819e2b1b0460387",
-          "aaveAdapter": "0xB81961aA49d7E834404e299e688B3Dc09a5EFe5a",
-          "compoundAdapter": "0xcc547a2B0f18b34095623809977D54cfe306BEBF",
-          "morphoAdapter": "0x5f8A64Bc67f23b8d5d02c7CFE187AD42D59f1D59",
-          "yieldMaxAdapter": "0x5EbD6F3DA76C2B9C9d6aAC89DA08c388EaB2B3cb",
+          "mockUSDC": "0x0678D3a3711D18e6cAd57De3bB35467683602DBA",
+          "faucet": "0x0f92aADcE1C457EF3355B28D9d3a9524b2cA81Db",
+          "riskRegistry": "0xDd00b97Cd8Df07BbC95D9eAfb680A86358943C06",
+          "shieldVault": "0x4d0A651776F789c4a7E23563aC3110Aa63A20F7C",
+          "shieldBridge": "0xB0A96E35F4048E5E007F8cC50C61b31034d90398",
+          "aaveAdapter": "0x2AB8a676Ca67bAB1C9e78f70C48b5b04eb288D8a",
+          "compoundAdapter": "0x7816D0b6399CfA2e81AE3c07721EE43cb3b3c6c8",
+          "morphoAdapter": "0x9D64139FEd95CFAd4d606aA8f145351068Cf36ac",
+          "yieldMaxAdapter": "0xf6b7306abe85B6B7236C4e5e79443773Ef13B4f3",
           "workflowLogger": "0xc874515881928b0ef35164843542f91d9ccfd2f3"
         }
       ]

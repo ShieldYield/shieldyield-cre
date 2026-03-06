@@ -19554,8 +19554,7 @@ function readAdapterSnapshot(runtime2, evmClient, adapterName, adapterAddress, a
       from: zeroAddress,
       to: adapterAddress,
       data: apyCallData
-    }),
-    blockNumber: LAST_FINALIZED_BLOCK_NUMBER
+    })
   }).result();
   const apy = decodeFunctionResult({
     abi,
@@ -19571,8 +19570,7 @@ function readAdapterSnapshot(runtime2, evmClient, adapterName, adapterAddress, a
       from: zeroAddress,
       to: adapterAddress,
       data: healthCallData
-    }),
-    blockNumber: LAST_FINALIZED_BLOCK_NUMBER
+    })
   }).result();
   const isHealthy = decodeFunctionResult({
     abi,
@@ -19588,8 +19586,7 @@ function readAdapterSnapshot(runtime2, evmClient, adapterName, adapterAddress, a
       from: zeroAddress,
       to: adapterAddress,
       data: breakdownCallData
-    }),
-    blockNumber: LAST_FINALIZED_BLOCK_NUMBER
+    })
   }).result();
   const breakdown = decodeFunctionResult({
     abi,
@@ -19922,6 +19919,10 @@ function computeRiskScore(adapter, currentRisk, offchain) {
     score += 10;
     onChainDamage = true;
   }
+  if (!offchain) {
+    const previousScore = currentRisk ? currentRisk.riskScore : 0;
+    return Math.min(100, Math.max(score, previousScore));
+  }
   const tvlChange = offchain.tvl.tvlChangePercent;
   if (tvlChange < -20) {
     score += 12;
@@ -19988,11 +19989,12 @@ function getThreatLevelLabel(score) {
     return "WARNING";
   return "CRITICAL";
 }
-function computeAllRiskScores(adapters, risks, offchain) {
+function computeAllRiskScores(adapters, risks, offchain, targetedProtocol) {
   const result = {};
   for (const adapter of adapters) {
     const currentRisk = risks.find((r) => r.address === adapter.address);
-    const score = computeRiskScore(adapter, currentRisk, offchain);
+    const adapterOffchain = adapter.name === targetedProtocol ? offchain : null;
+    const score = computeRiskScore(adapter, currentRisk, adapterOffchain);
     result[adapter.name] = {
       score,
       level: getThreatLevelLabel(score)
@@ -20223,19 +20225,38 @@ ${"─".repeat(50)}`);
 ${"=".repeat(60)}`);
   runtime2.log(`\uD83D\uDD0D Risk Assessment — ${primaryChainName}`);
   runtime2.log(`   Adapters: ${primaryChainAdapters.length}, Prices: ETH=$${primaryChainPrices.ethUsd.toFixed(2)} BTC=$${primaryChainPrices.btcUsd.toFixed(2)} USDC=$${primaryChainPrices.usdcUsd.toFixed(6)}`);
-  runtime2.log("Fetching off-chain signals...");
   const apisConfig = runtime2.config.offchainApis;
-  const primaryAdapter = apisConfig.adapters[apisConfig.primaryProtocol];
-  if (!primaryAdapter) {
-    runtime2.log(`ERROR: Primary protocol '${apisConfig.primaryProtocol}' not found in adapter config`);
-    return JSON.stringify({ status: "error", error: "Invalid primaryProtocol config" });
+  const availableProtocols = Object.keys(apisConfig.adapters);
+  let targetedProtocol = "";
+  for (const a of primaryChainAdapters) {
+    if (!a.isHealthy || a.apy === 0n || a.apy > 5000n || a.principal > 0n && a.balance === 0n) {
+      if (availableProtocols.includes(a.name)) {
+        targetedProtocol = a.name;
+        runtime2.log(`\uD83D\uDEA8 On-chain anomaly detected for ${a.name}, prioritizing for AI Analysis`);
+        break;
+      }
+    }
   }
-  const goPlusUrl = `https://api.gopluslabs.io/api/v1/token_security/${apisConfig.goPlusChainId}?contract_addresses=${primaryAdapter.goPlusTokenAddress}`;
-  const teamWalletUrl = `https://api.arbiscan.io/api?module=account&action=balance&address=${primaryAdapter.teamWallet}&tag=latest&apikey=YourApiKeyToken`;
-  runtime2.log(`Using primary protocol: ${apisConfig.primaryProtocol}`);
+  if (!targetedProtocol && availableProtocols.length > 0) {
+    const cycleIndex = Math.floor(Date.now() / (1000 * 60 * 5)) % availableProtocols.length;
+    targetedProtocol = availableProtocols[cycleIndex];
+    runtime2.log(`\uD83D\uDD04 Routine AI Analysis round-robin selected: ${targetedProtocol}`);
+  }
+  if (!targetedProtocol) {
+    targetedProtocol = apisConfig.primaryProtocol;
+  }
+  runtime2.log("Fetching off-chain signals...");
+  const targetAdapterConfig = apisConfig.adapters[targetedProtocol];
+  if (!targetAdapterConfig) {
+    runtime2.log(`ERROR: Protocol '${targetedProtocol}' not found in adapter config`);
+    return JSON.stringify({ status: "error", error: "Invalid protocol config" });
+  }
+  const goPlusUrl = `https://api.gopluslabs.io/api/v1/token_security/${apisConfig.goPlusChainId}?contract_addresses=${targetAdapterConfig.goPlusTokenAddress}`;
+  const teamWalletUrl = `https://api.arbiscan.io/api?module=account&action=balance&address=${targetAdapterConfig.teamWallet}&tag=latest&apikey=YourApiKeyToken`;
+  runtime2.log(`Using target protocol: ${targetedProtocol}`);
   const httpSignals = fetchAllOffchainSignals(runtime2, {
     aiSentinelUrl: apisConfig.aiSentinelUrl,
-    primaryProtocol: apisConfig.primaryProtocol,
+    primaryProtocol: targetedProtocol,
     goPlusUrl,
     teamWalletUrl
   });
@@ -20288,7 +20309,7 @@ ${"=".repeat(60)}`);
   };
   runtime2.log(`\uD83D\uDCCA TVL: $${currentTvl.toFixed(2)}, change=${tvlChangePercent.toFixed(2)}%`);
   runtime2.log("Computing risk scores...");
-  const riskScores = computeAllRiskScores(primaryChainAdapters, [], offchain);
+  const riskScores = computeAllRiskScores(primaryChainAdapters, [], offchain, targetedProtocol);
   for (const [name, { score, level }] of Object.entries(riskScores)) {
     runtime2.log(`${name}: score=${score}/100, level=${level}`);
   }
@@ -20303,42 +20324,24 @@ ${"=".repeat(60)}`);
   } else {
     runtime2.log("No anomalies detected");
   }
-  const hasWarningOrCritical = Object.values(riskScores).some((r) => r.level === "WARNING" || r.level === "CRITICAL");
-  if (hasWarningOrCritical && primaryAddresses.riskRegistry) {
-    runtime2.log("WARNING/CRITICAL detected — updating on-chain risk scores...");
-    const evmClient = createEvmClient(primaryChainName);
-    const protocols = [];
-    const scores = [];
-    const reasons = [];
+  if (primaryAddresses.riskRegistry) {
     const adapterNameToAddress = {
       AaveAdapter: primaryAddresses.aaveAdapter,
       CompoundAdapter: primaryAddresses.compoundAdapter,
       MorphoAdapter: primaryAddresses.morphoAdapter,
       YieldMaxAdapter: primaryAddresses.yieldMaxAdapter
     };
+    runtime2.log(`\uD83D\uDCDD On-chain write payload → RiskRegistry: ${primaryAddresses.riskRegistry}`);
+    runtime2.log(`   Function: batchUpdateRiskScores(protocols[], scores[], reasons[])`);
+    let i2 = 0;
     for (const [name, { score, level }] of Object.entries(riskScores)) {
       const addr = adapterNameToAddress[name];
       if (addr) {
-        protocols.push(addr);
-        scores.push(score);
         const adapterAnomalies = anomalies.filter((a) => a.adapter === name);
         const reason = adapterAnomalies.length > 0 ? adapterAnomalies.map((a) => `${a.type}: ${a.message}`).join("; ") : `Risk score: ${score}, Level: ${level}`;
-        reasons.push(reason);
+        runtime2.log(`   [${i2}] ${name} (${addr}): score=${score}, reason="${reason}"`);
+        i2++;
       }
-    }
-    try {
-      const txData = encodeFunctionData({
-        abi: RiskRegistry,
-        functionName: "batchUpdateRiskScores",
-        args: [protocols, scores, reasons]
-      });
-      evmClient.writeReport(runtime2, {
-        receiver: primaryAddresses.riskRegistry,
-        report: new Report({ rawReport: txData })
-      }).result();
-      runtime2.log("Risk scores written on-chain successfully");
-    } catch (err) {
-      runtime2.log(`Failed to write risk scores on-chain: ${err}`);
     }
   }
   allResults.push({
