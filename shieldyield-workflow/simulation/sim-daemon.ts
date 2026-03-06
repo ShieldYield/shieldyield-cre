@@ -24,6 +24,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { arbitrumSepolia } from "viem/chains";
 
 import { RiskRegistry } from "../../contracts/abi";
+import { startMockVarianceServer } from "./bft/mock-variance-server";
 
 // ─────────────────────────────────────────────────
 // CONFIG
@@ -57,9 +58,9 @@ const publicClient = createPublicClient({ chain: arbitrumSepolia, transport: htt
 // ─────────────────────────────────────────────────
 
 const ADAPTER_ADDRESSES: Record<string, string> = {
-    AaveAdapter:     addresses.aaveAdapter     || "",
+    AaveAdapter: addresses.aaveAdapter || "",
     CompoundAdapter: addresses.compoundAdapter || "",
-    MorphoAdapter:   addresses.morphoAdapter   || "",
+    MorphoAdapter: addresses.morphoAdapter || "",
     YieldMaxAdapter: addresses.yieldMaxAdapter || "",
 };
 
@@ -193,6 +194,16 @@ async function main() {
     log("DAEMON", `Wallet: ${account.address}`, C.dim);
     log("DAEMON", `RiskRegistry: ${addresses.riskRegistry}`, C.dim);
     log("DAEMON", `Cron interval: ${CRON_MS / 1000}s`, C.dim);
+
+    // Mulai mock variance server supaya sim-inject dan sim-bft bisa bekerja
+    const stopMockServer = startMockVarianceServer();
+
+    // Graceful shutdown
+    process.on("SIGINT", () => {
+        log("DAEMON", "Menghentikan daemon...", C.yellow);
+        stopMockServer();
+        process.exit(0);
+    });
 
     // Sequential loop — each cycle waits for the previous to fully complete
     while (true) {

@@ -51,18 +51,18 @@ export const MOCK_SERVER_PORT = 3099;
  * Jika field tidak di-set, nilai dari upstream/default tetap digunakan.
  */
 export interface InjectedScenario {
-    type:               string;   // "normal" | "warning" | "critical" | "exploit" | ...
-    label:              string;   // Label untuk log display
-    description?:       string;   // Deskripsi skenario
+    type: string;   // "normal" | "warning" | "critical" | "exploit" | ...
+    label: string;   // Label untuk log display
+    description?: string;   // Deskripsi skenario
 
     // Off-chain overrides — null = gunakan upstream/default
-    aiScore?:           number;   // 0-100, override ai_threat_score SEBELUM variance
-    tvlChangePercent?:  number;   // %, override tvlChangePercent SEBELUM variance
-    utilization?:       number;   // %, override utilization di defi-metrics
+    aiScore?: number;   // 0-100, override ai_threat_score SEBELUM variance
+    tvlChangePercent?: number;   // %, override tvlChangePercent SEBELUM variance
+    utilization?: number;   // %, override utilization di defi-metrics
 
     // Metadata
-    injectedAt:         number;   // unix timestamp (detik)
-    expiresAt?:         number;   // unix timestamp — auto-clear jika terlewat
+    injectedAt: number;   // unix timestamp (detik)
+    expiresAt?: number;   // unix timestamp — auto-clear jika terlewat
 }
 
 let injectedScenario: InjectedScenario | null = null;
@@ -106,7 +106,7 @@ function clamp(val: number, min: number, max: number): number {
 // ─────────────────────────────────────────────────
 
 async function proxyUpstream(
-    pathname:     string,
+    pathname: string,
     searchParams: URLSearchParams
 ): Promise<any | null> {
     try {
@@ -114,11 +114,11 @@ async function proxyUpstream(
         upstreamParams.delete("node"); // jangan teruskan param node ke upstream
         upstreamParams.set("sim", "true"); // sinyal ke FE API routes → gunakan mock data
 
-        const qs  = upstreamParams.toString();
+        const qs = upstreamParams.toString();
         const url = `${UPSTREAM_BASE}${pathname}${qs ? "?" + qs : ""}`;
 
         const resp = await fetch(url, {
-            signal:  AbortSignal.timeout(8_000),
+            signal: AbortSignal.timeout(8_000),
             headers: { "User-Agent": "ShieldYield-BFT-MockServer" },
         });
 
@@ -134,9 +134,9 @@ async function proxyUpstream(
 // ─────────────────────────────────────────────────
 
 async function handleRequest(req: Request): Promise<Response> {
-    const url    = new URL(req.url);
+    const url = new URL(req.url);
     const nodeId = parseInt(url.searchParams.get("node") || "0", 10);
-    const path   = url.pathname;
+    const path = url.pathname;
     const method = req.method;
 
     // ─── Injection management ──────────────────────────────────────────────
@@ -153,10 +153,10 @@ async function handleRequest(req: Request): Promise<Response> {
             injectedScenario = { ...body, injectedAt: Math.floor(Date.now() / 1000) };
             console.log(
                 `\x1b[35m[BFT-MOCK]\x1b[0m \x1b[1mScenario diinjeksi:\x1b[0m ${injectedScenario.label}` +
-                (injectedScenario.aiScore       !== undefined ? `  AI=${injectedScenario.aiScore}`      : "") +
+                (injectedScenario.aiScore !== undefined ? `  AI=${injectedScenario.aiScore}` : "") +
                 (injectedScenario.tvlChangePercent !== undefined ? `  TVL%=${injectedScenario.tvlChangePercent}%` : "") +
-                (injectedScenario.utilization   !== undefined ? `  util=${injectedScenario.utilization}%` : "") +
-                (injectedScenario.expiresAt     !== undefined
+                (injectedScenario.utilization !== undefined ? `  util=${injectedScenario.utilization}%` : "") +
+                (injectedScenario.expiresAt !== undefined
                     ? `  (expires in ${injectedScenario.expiresAt - Math.floor(Date.now() / 1000)}s)`
                     : "")
             );
@@ -180,7 +180,7 @@ async function handleRequest(req: Request): Promise<Response> {
     // ─── Data routes — proxy upstream + variance + injection ──────────────
 
     const upstream = await proxyUpstream(path, url.searchParams);
-    const inj      = getActiveScenario();
+    const inj = getActiveScenario();
 
     // ── /api/ai-sentinel ──────────────────────────────────────────────────
     if (path === "/api/ai-sentinel") {
@@ -188,16 +188,16 @@ async function handleRequest(req: Request): Promise<Response> {
         const baseScore = inj?.aiScore !== undefined
             ? inj.aiScore
             : (upstream ? (Number(upstream.ai_threat_score) || 30) : 30);
-        const baseConf  = upstream ? (Number(upstream.confidence) || 0.3) : 0.3;
+        const baseConf = upstream ? (Number(upstream.confidence) || 0.3) : 0.3;
 
         const variedScore = clamp(Math.round(baseScore + nodeVariance(nodeId, 1) * 15), 0, 100);
-        const variedConf  = Math.round(
+        const variedConf = Math.round(
             clamp(baseConf + nodeVariance(nodeId, 2) * 0.15, 0.05, 1.0) * 1000
         ) / 1000;
 
         const github = upstream?.github ?? {
-            recentCommits:   0,
-            openIssues:      0,
+            recentCommits: 0,
+            openIssues: 0,
             lastPushDaysAgo: 999,
         };
 
@@ -208,10 +208,10 @@ async function handleRequest(req: Request): Promise<Response> {
         return Response.json({
             github,
             ai_threat_score: variedScore,
-            confidence:      variedConf,
+            confidence: variedConf,
             reasoning,
-            recommendation:  upstream?.recommendation ?? "HOLD",
-            signals:         upstream?.signals        ?? [],
+            recommendation: upstream?.recommendation ?? "HOLD",
+            signals: upstream?.signals ?? [],
             ...(inj ? { _injected: inj.type } : {}),
         });
     }
@@ -224,14 +224,14 @@ async function handleRequest(req: Request): Promise<Response> {
         const baseTvlChg = inj?.tvlChangePercent !== undefined
             ? inj.tvlChangePercent
             : (upstream ? (Number(upstream.tvlChangePercent) || 0) : 0);
-        const baseTvl    = upstream ? (Number(upstream.currentTvl) || currentTvl) : currentTvl;
+        const baseTvl = upstream ? (Number(upstream.currentTvl) || currentTvl) : currentTvl;
 
         const variedChange = Math.round(
             (baseTvlChg + nodeVariance(nodeId, 3) * 0.5) * 100
         ) / 100;
 
         return Response.json({
-            currentTvl:       baseTvl,
+            currentTvl: baseTvl,
             tvlChangePercent: variedChange,
             ...(inj ? { _injected: inj.type } : {}),
         });
@@ -244,7 +244,7 @@ async function handleRequest(req: Request): Promise<Response> {
         // Override utilization jika diinjeksi
         if (inj?.utilization !== undefined) {
             const util = inj.utilization;
-            if (result.aave)     result = { ...result, aave:     { ...result.aave,     utilization: util } };
+            if (result.aave) result = { ...result, aave: { ...result.aave, utilization: util } };
             if (result.compound) result = { ...result, compound: { ...result.compound, utilization: util } };
         }
         if (inj) result = { ...result, _injected: inj.type };
@@ -272,7 +272,7 @@ async function handleRequest(req: Request): Promise<Response> {
 
 export function startMockVarianceServer(): () => void {
     const server = Bun.serve({
-        port:  MOCK_SERVER_PORT,
+        port: MOCK_SERVER_PORT,
         fetch: handleRequest,
     });
 
@@ -291,4 +291,8 @@ export function startMockVarianceServer(): () => void {
         server.stop();
         console.log("\x1b[2m[BFT-MOCK] Mock variance server dihentikan\x1b[0m");
     };
+}
+
+if (import.meta.main) {
+    startMockVarianceServer();
 }
