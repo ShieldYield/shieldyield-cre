@@ -20267,7 +20267,7 @@ ${"=".repeat(60)}`);
     totalBalance += a.balance;
     totalPrincipal += a.principal;
   }
-  const currentTvl = Number(totalBalance) * usdcPrice / 1e6;
+  const currentTvl = Number(totalBalance) * usdcPrice / 1000000000000000000;
   const fallbackChangePercent = totalPrincipal > 0n ? (Number(totalBalance) - Number(totalPrincipal)) / Number(totalPrincipal) * 100 : 0;
   let tvlChangePercent = fallbackChangePercent;
   try {
@@ -20668,6 +20668,54 @@ function executeCriticalProtocol(runtime2, chainName, shieldVaultAddress, adapte
     };
   }
 }
+function executeCriticalBridgeProtocol(runtime2, chainName, shieldBridgeAddress, tokenAddress, amountToBridge, destinationChainSelector, reason) {
+  const evmClient = createEvmClient3(chainName);
+  const actions = [];
+  const partialShieldBridgeAbi = [
+    {
+      name: "emergencyBridge",
+      type: "function",
+      stateMutability: "nonpayable",
+      inputs: [
+        { name: "token", type: "address" },
+        { name: "amount", type: "uint256" },
+        { name: "destinationChainSelector", type: "uint64" }
+      ],
+      outputs: [{ name: "messageId", type: "bytes32" }]
+    }
+  ];
+  try {
+    runtime2.log(`ShieldExecutor: CROSS-CHAIN ESCAPE — bridging ${amountToBridge} of ${tokenAddress} to chain ${destinationChainSelector}`);
+    const txData = encodeFunctionData({
+      abi: partialShieldBridgeAbi,
+      functionName: "emergencyBridge",
+      args: [tokenAddress, amountToBridge, BigInt(destinationChainSelector)]
+    });
+    evmClient.writeReport(runtime2, {
+      receiver: shieldBridgeAddress,
+      report: new Report({ rawReport: txData })
+    }).result();
+    actions.push({
+      type: "BRIDGE",
+      adapter: tokenAddress,
+      reason,
+      threatLevel: "CRITICAL_CROSS_CHAIN"
+    });
+    return {
+      actions,
+      success: true,
+      message: `Cross-chain emergency bridge initiated for token ${tokenAddress} to chain ${destinationChainSelector}.`
+    };
+  } catch (err) {
+    runtime2.log(`ShieldExecutor: BRIDGE action failed — ${err}`);
+    return {
+      actions,
+      success: false,
+      message: `BRIDGE action failed: ${err}`
+    };
+  }
+}
+var BASE_SEPOLIA_SELECTOR = 10344971235874465080n;
 var onShieldTrigger = (runtime2, triggerEvent) => {
   runtime2.log("=".repeat(60));
   runtime2.log("\uD83D\uDEE1️  WORKFLOW 4: SHIELD EXECUTE (EMERGENCY PROTOCOL)");
@@ -20718,13 +20766,41 @@ var onShieldTrigger = (runtime2, triggerEvent) => {
   }
   if (threatLevel >= THREAT_LEVEL.CRITICAL) {
     runtime2.log("Executing CRITICAL protocol — EMERGENCY WITHDRAWAL...");
-    const result = executeCriticalProtocol(runtime2, evm.chainName, addresses.shieldVault, protocolAddress, `ShieldYield CRITICAL: Risk score ${newScore}/100. Emergency withdrawal to protect all funds.`);
+    const withdrawResult = executeCriticalProtocol(runtime2, evm.chainName, addresses.shieldVault, protocolAddress, `ShieldYield CRITICAL: Risk score ${newScore}/100. Emergency withdrawal to protect all funds.`);
+    const baseEvm = runtime2.config.evms.find((e) => e.chainName === "ethereum-testnet-sepolia-base-1");
+    const baseAddresses = baseEvm?.addresses[0];
+    if (addresses.shieldBridge && baseAddresses?.shieldVault && addresses.mockUSDC) {
+      runtime2.log("Initiating CCIP bridge: Arbitrum Sepolia → Base Sepolia...");
+      runtime2.log(`  Arb ShieldBridge: ${addresses.shieldBridge}`);
+      runtime2.log(`  Base safe haven (ShieldVault): ${baseAddresses.shieldVault}`);
+      runtime2.log(`  Base Aave adapter: ${baseAddresses.aaveAdapter}`);
+      runtime2.log(`  Base Compound adapter: ${baseAddresses.compoundAdapter}`);
+      const bridgeResult = executeCriticalBridgeProtocol(runtime2, evm.chainName, addresses.shieldBridge, addresses.mockUSDC, 0n, BASE_SEPOLIA_SELECTOR, `CCIP Emergency: Evacuating to Base Sepolia. Risk score ${newScore}/100.`);
+      runtime2.log(`CCIP bridge: ${bridgeResult.message}`);
+      return JSON.stringify({
+        status: "shield_activated",
+        level: "CRITICAL",
+        workflowId: "0xe1a46d08013e5749b754effd2bd197ceccfb18a0efdc9cacb8bded35b965910",
+        timestamp: Date.now(),
+        withdraw: withdrawResult,
+        bridge: {
+          ...bridgeResult,
+          sourceChain: "Arbitrum Sepolia",
+          destinationChain: "Base Sepolia",
+          destinationVault: baseAddresses.shieldVault,
+          safeHavenAdapters: {
+            aave: baseAddresses.aaveAdapter,
+            compound: baseAddresses.compoundAdapter
+          }
+        }
+      });
+    }
     return JSON.stringify({
       status: "shield_activated",
       level: "CRITICAL",
       workflowId: "0xe1a46d08013e5749b754effd2bd197ceccfb18a0efdc9cacb8bded35b965910",
       timestamp: Date.now(),
-      ...result
+      ...withdrawResult
     });
   }
   return JSON.stringify({ status: "no_action" });

@@ -16,15 +16,14 @@
       "chainName": "ethereum-testnet-sepolia-arbitrum-1",
       "addresses": [
         {
-          "mockUSDC": "0x0678D3a3711D18e6cAd57De3bB35467683602DBA",
-          "faucet": "0x0f92aADcE1C457EF3355B28D9d3a9524b2cA81Db",
-          "riskRegistry": "0xDd00b97Cd8Df07BbC95D9eAfb680A86358943C06",
-          "shieldVault": "0x4d0A651776F789c4a7E23563aC3110Aa63A20F7C",
-          "shieldBridge": "0xB0A96E35F4048E5E007F8cC50C61b31034d90398",
-          "aaveAdapter": "0x2AB8a676Ca67bAB1C9e78f70C48b5b04eb288D8a",
-          "compoundAdapter": "0x7816D0b6399CfA2e81AE3c07721EE43cb3b3c6c8",
-          "morphoAdapter": "0x9D64139FEd95CFAd4d606aA8f145351068Cf36ac",
-          "yieldMaxAdapter": "0xf6b7306abe85B6B7236C4e5e79443773Ef13B4f3",
+          "mockUSDC": "0xA8C0c11bf64AF62CDCA6f93D3769B88BdD7cb93D",
+          "riskRegistry": "0x28B38104F3cD62EABE17E927d61DbC50B834b1B7",
+          "shieldVault": "0xe6D20be65eA58e30eFCb8DBe677772959aAdFCd9",
+          "shieldBridge": "0xC18B973B1F0EaAc75ae9035439d691515da06d0e",
+          "aaveAdapter": "0x8BdCad76328f00AB9A0712E8292fc1a1aDCaa82a",
+          "compoundAdapter": "0xF2F0fa5fC187cFE6538d72C86ccCADa996956aAA",
+          "morphoAdapter": "0x3f5b509a1d59814567fe370a471463c3AEa38400",
+          "yieldMaxAdapter": "0xaFD04A3A43a8B8d4523e3F1031071D1D378D8096",
           "workflowLogger": "0xc874515881928b0ef35164843542f91d9ccfd2f3"
         }
       ]
@@ -38,15 +37,14 @@
       },
       "addresses": [
         {
-          "mockUSDC": "0xe7a60289d7CB903a11ed84f507c9D4936Da347D3",
-          "faucet": "0x8Df108C2357123DAA0a6D842b50f1F370e9a7c61",
-          "riskRegistry": "0xd326C6c99C2539C4889Cd237aD0A05225eD8ED10",
-          "shieldVault": "0x61A40b866cAE11aC17986FbEeb9c700f4c8F088B",
-          "shieldBridge": "0xE665F22b138191Cf6B9C534f8206D05A09d016b5",
-          "aaveAdapter": "0xe7A9d43cb9D751995E18884D58a6D5fE53B479F2",
-          "compoundAdapter": "0xF32aF905922fbCcF5fCe4B843115F70fE28C6c34",
-          "morphoAdapter": "0xe99FeF6a4670597053544F1923B6485ba9DeA27E",
-          "yieldMaxAdapter": "0xC7e1F2d8B24F1740e0b7b1Bb5a7E41633BE361FA"
+          "mockUSDC": "0x88A2d74F47a237a62e7A51cdDa67270CE381555e",
+          "riskRegistry": "0x857fa4B1D4eD1b4E26aB2704Bd2D3C381CAfeD13",
+          "shieldVault": "0x220b8e0733e0E1eD90a44d9Bd81D558D685c0fE0",
+          "shieldBridge": "0x4B8381d50A8D609A43060Fc19692289870afC80f",
+          "aaveAdapter": "0xc8c06751384601300AfA12BeE12888f6dAf4A167",
+          "compoundAdapter": "0xc66627589c2d1Eeee420c1C2F4918747f5906106",
+          "morphoAdapter": "0x35E683F8bc9Bf0ff63256F65bAb0dD62604ED85D",
+          "yieldMaxAdapter": "0xf7Bf7ddC5d261b60C25a291134FA1312912A599E"
         }
       ]
     }

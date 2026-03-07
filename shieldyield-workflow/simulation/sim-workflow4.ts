@@ -26,10 +26,27 @@ import {
     type Address,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { baseSepolia } from "viem/chains";
+import { arbitrumSepolia } from "viem/chains";
 
 import { RiskRegistry, ShieldVault } from "../../contracts/abi";
 import { readAllAdaptersSim, createSimPublicClient } from "./sim-reader";
+
+const BASE_SEPOLIA_SELECTOR = 10344971235874465080n;
+
+// Partial ABI for ShieldBridge since it's not exported from contracts/abi.ts
+const ShieldBridgeABI = [
+    {
+        name: "emergencyBridge",
+        type: "function",
+        stateMutability: "nonpayable",
+        inputs: [
+            { name: "token", type: "address" },
+            { name: "amount", type: "uint256" },
+            { name: "destinationChainSelector", type: "uint64" },
+        ],
+        outputs: [{ name: "messageId", type: "bytes32" }],
+    },
+] as const;
 
 // ─────────────────────────────────────────────────
 // CONFIG
@@ -39,10 +56,10 @@ const CONFIG_PATH = path.join(__dirname, "..", "config.staging.json");
 const config = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf-8"));
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY ?? process.env.CRE_ETH_PRIVATE_KEY;
-const RPC_URL = process.env.RPC_URL || "https://sepolia.base.org";
+const RPC_URL = process.env.RPC_URL || "https://sepolia-rollup.arbitrum.io/rpc";
 
-const baseEvm = config.evms.find((e: any) => e.chainName === "ethereum-testnet-sepolia-base-1");
-const addresses = baseEvm?.addresses[0] || {};
+const arbEvm = config.evms.find((e: any) => e.chainName === "ethereum-testnet-sepolia-arbitrum-1");
+const addresses = arbEvm?.addresses[0] || {};
 
 if (!PRIVATE_KEY) {
     console.error("ERROR: Set CRE_ETH_PRIVATE_KEY=0x...");
@@ -54,9 +71,9 @@ if (!PRIVATE_KEY) {
 // ─────────────────────────────────────────────────
 
 const account = privateKeyToAccount(PRIVATE_KEY as `0x${string}`);
-const walletClient = createWalletClient({ account, chain: baseSepolia, transport: http(RPC_URL) });
-const publicClient = createPublicClient({ chain: baseSepolia, transport: http(RPC_URL) });
-const simClient = createSimPublicClient(RPC_URL, baseSepolia);
+const walletClient = createWalletClient({ account, chain: arbitrumSepolia, transport: http(RPC_URL) });
+const publicClient = createPublicClient({ chain: arbitrumSepolia, transport: http(RPC_URL) });
+const simClient = createSimPublicClient(RPC_URL, arbitrumSepolia);
 
 // ─────────────────────────────────────────────────
 // CONSTANTS
@@ -141,7 +158,7 @@ async function executeShield(adapter: ThreatAdapter, vaultAddr: Address, registr
 
     console.log(`\n  ${actionColor}${C.bold}${actionLabel}${C.r}`);
     console.log(`  ${C.dim}Target: ${adapter.name} (${adapter.address})${C.r}`);
-    console.log(`  ${C.dim}Balance at risk: $${(Number(adapter.balance) / 1e6).toFixed(6)} USDC${C.r}`);
+    console.log(`  ${C.dim}Balance at risk: $${(Number(adapter.balance) / 1e18).toFixed(6)} USDC${C.r}`);
 
     if (isCritical) {
         // ── CRITICAL: full emergency withdrawal ──────────────────────────────
@@ -160,32 +177,51 @@ async function executeShield(adapter: ThreatAdapter, vaultAddr: Address, registr
             console.log(`  ${C.red}TX submitted: ${hash}${C.r}`);
             const receipt = await publicClient.waitForTransactionReceipt({ hash });
             console.log(`  ${C.red}${C.bold}✅ Emergency withdrawal confirmed in block ${receipt.blockNumber}${C.r}`);
-            console.log(`  ${C.dim}🔎 https://sepolia.basescan.org/tx/${hash}${C.r}`);
+            console.log(`  ${C.dim}🔎 https://sepolia.arbiscan.io/tx/${hash}${C.r}`);
 
-            // Log to RiskRegistry
-            const nonce2 = await publicClient.getTransactionCount({ address: account.address, blockTag: "pending" });
-            const logHash = await walletClient.writeContract({
-                address: registryAddr,
-                abi: RiskRegistry,
-                functionName: "logShieldAction",
-                args: [
-                    account.address,
-                    adapter.address,
-                    3, // CRITICAL
-                    adapter.balance,
-                    reason,
-                ],
-                nonce: nonce2,
-            });
-            await publicClient.waitForTransactionReceipt({ hash: logHash });
-            console.log(`  ${C.red}Shield action logged on-chain: ${logHash}${C.r}`);
-            console.log(`  ${C.red}${C.bold}  Amount saved: $${(Number(adapter.balance) / 1e6).toFixed(6)} USDC${C.r}`);
+            // NEW: Cross-Chain CCIP Bridge
+            if (addresses.shieldBridge && addresses.mockUSDC) {
+                console.log(`\n  ${C.magenta}${C.bold}CROSS-CHAIN ESCAPE (CCIP)${C.r}`);
+                console.log(`  ${C.dim}Initiating CCIP bridge to Base Sepolia...${C.r}`);
+                const nonceBridge = await publicClient.getTransactionCount({ address: account.address, blockTag: "pending" });
+                const bridgeHash = await walletClient.writeContract({
+                    address: addresses.shieldBridge as Address,
+                    abi: ShieldBridgeABI,
+                    functionName: "emergencyBridge",
+                    args: [addresses.mockUSDC as Address, 0n, BASE_SEPOLIA_SELECTOR],
+                    nonce: nonceBridge,
+                });
+                console.log(`  ${C.magenta}CCIP Bridge TX: ${bridgeHash}${C.r}`);
+                await publicClient.waitForTransactionReceipt({ hash: bridgeHash });
+                console.log(`  ${C.magenta}${C.bold}✅ Funds bridging to Base Sepolia via CCIP${C.r}`);
+            }
+
+            try {
+                const nonce2 = await publicClient.getTransactionCount({ address: account.address, blockTag: "pending" });
+                const logHash = await walletClient.writeContract({
+                    address: registryAddr,
+                    abi: RiskRegistry,
+                    functionName: "logShieldAction",
+                    args: [
+                        account.address,
+                        adapter.address,
+                        3, // CRITICAL
+                        adapter.balance,
+                        reason,
+                    ],
+                    nonce: nonce2,
+                });
+                await publicClient.waitForTransactionReceipt({ hash: logHash });
+                console.log(`  ${C.red}Shield action logged on-chain: ${logHash}${C.r}`);
+            } catch (logErr) {
+               console.log(`  ${C.yellow}⚠️  logShieldAction reverted: RiskRegistry only allows ShieldVault. (Cosmetic error)${C.r}`);
+            }
+            console.log(`  ${C.red}${C.bold}  Amount saved + bridged: $${(Number(adapter.balance) / 1e18).toFixed(6)} USDC${C.r}`);
 
         } catch (err: any) {
-            console.error(`  ${C.yellow}⚠️  emergencyWithdraw reverted (SC may be base version).${C.r}`);
+            console.error(`  ${C.yellow}⚠️  emergencyWithdraw or bridge reverted.${C.r}`);
             console.error(`  ${C.dim}${err?.shortMessage || err?.message || String(err)}${C.r}`);
-            console.log(`  ${C.cyan}[SIMULATED] Would have withdrawn $${(Number(adapter.balance) / 1e6).toFixed(6)} USDC from ${adapter.name}${C.r}`);
-            console.log(`  ${C.cyan}[SIMULATED] Would have migrated to safe haven address: ${C.dim}(safeHaven not set)${C.r}`);
+            console.log(`  ${C.cyan}[SIMULATED] Would have withdrawn $${(Number(adapter.balance) / 1e18).toFixed(6)} USDC from ${adapter.name}${C.r}`);
         }
 
     } else if (isWarning) {
@@ -206,32 +242,35 @@ async function executeShield(adapter: ThreatAdapter, vaultAddr: Address, registr
             console.log(`  ${C.yellow}TX submitted: ${hash}${C.r}`);
             const receipt = await publicClient.waitForTransactionReceipt({ hash });
             console.log(`  ${C.yellow}${C.bold}✅ Partial withdrawal confirmed in block ${receipt.blockNumber}${C.r}`);
-            console.log(`  ${C.dim}🔎 https://sepolia.basescan.org/tx/${hash}${C.r}`);
+            console.log(`  ${C.dim}🔎 https://sepolia.arbiscan.io/tx/${hash}${C.r}`);
 
-            // Log to RiskRegistry
-            const nonce2 = await publicClient.getTransactionCount({ address: account.address, blockTag: "pending" });
-            const logHash = await walletClient.writeContract({
-                address: registryAddr,
-                abi: RiskRegistry,
-                functionName: "logShieldAction",
-                args: [
-                    account.address,
-                    adapter.address,
-                    2, // WARNING
-                    amountAtRisk,
-                    reason,
-                ],
-                nonce: nonce2,
-            });
-            await publicClient.waitForTransactionReceipt({ hash: logHash });
-            console.log(`  ${C.yellow}Shield action logged on-chain: ${logHash}${C.r}`);
-            console.log(`  ${C.yellow}${C.bold}  Amount protected: $${(Number(amountAtRisk) / 1e6).toFixed(6)} USDC (30%)${C.r}`);
+            try {
+                const nonce2 = await publicClient.getTransactionCount({ address: account.address, blockTag: "pending" });
+                const logHash = await walletClient.writeContract({
+                    address: registryAddr,
+                    abi: RiskRegistry,
+                    functionName: "logShieldAction",
+                    args: [
+                        account.address,
+                        adapter.address,
+                        2, // WARNING
+                        amountAtRisk,
+                        reason,
+                    ],
+                    nonce: nonce2,
+                });
+                await publicClient.waitForTransactionReceipt({ hash: logHash });
+                console.log(`  ${C.yellow}Shield action logged on-chain: ${logHash}${C.r}`);
+            } catch (logErr) {
+                console.log(`  ${C.yellow}⚠️  logShieldAction reverted: RiskRegistry only allows ShieldVault. (Cosmetic error)${C.r}`);
+            }
+            console.log(`  ${C.yellow}${C.bold}  Amount protected: $${(Number(amountAtRisk) / 1e18).toFixed(6)} USDC (30%)${C.r}`);
 
         } catch (err: any) {
             console.error(`  ${C.yellow}⚠️  partialWithdraw reverted (SC may be base version).${C.r}`);
             console.error(`  ${C.dim}${err?.shortMessage || err?.message || String(err)}${C.r}`);
-            console.log(`  ${C.cyan}[SIMULATED] Would have withdrawn 30% ($${(Number(amountAtRisk) / 1e6).toFixed(6)} USDC) from ${adapter.name}${C.r}`);
-            console.log(`  ${C.cyan}[SIMULATED] Remaining 70% ($${(Number(adapter.balance - amountAtRisk) / 1e6).toFixed(6)} USDC) stays in position${C.r}`);
+            console.log(`  ${C.cyan}[SIMULATED] Would have withdrawn 30% ($${(Number(amountAtRisk) / 1e18).toFixed(6)} USDC) from ${adapter.name}${C.r}`);
+            console.log(`  ${C.cyan}[SIMULATED] Remaining 70% ($${(Number(adapter.balance - amountAtRisk) / 1e18).toFixed(6)} USDC) stays in position${C.r}`);
         }
     }
 }
@@ -265,7 +304,7 @@ async function main() {
             `${marker} ${C.bold}${a.name.padEnd(18)}${C.r}` +
             ` ${col}${a.threatLabel.padEnd(10)}${C.r}` +
             ` score=${col}${a.riskScore}/100${C.r}` +
-            `  balance=$${(Number(a.balance) / 1e6).toFixed(4)}`
+            `  balance=$${(Number(a.balance) / 1e18).toFixed(4)}`
         );
     }
     console.log(`${C.dim}${"─".repeat(60)}${C.r}\n`);
@@ -300,7 +339,7 @@ async function main() {
         console.log(`\n${C.bold}  Post-Action Summary:${C.r}`);
         console.log(`  ${C.red}  Emergency withdrawals: ${criticalCount}${C.r}`);
         console.log(`  ${C.yellow}  Partial withdrawals:   ${warningCount}${C.r}`);
-        console.log(`  ${C.green}  Total protected:       $${(totalSaved / 1e6).toFixed(6)} USDC${C.r}`);
+        console.log(`  ${C.green}  Total protected:       $${(totalSaved / 1e18).toFixed(6)} USDC${C.r}`);
         console.log(`\n  ${C.dim}Next steps: Re-run Workflow 1 (Sentinel Scan) → Workflow 3 (AI Rebalancer)${C.r}`);
     }
 

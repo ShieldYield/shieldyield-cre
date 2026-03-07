@@ -190,7 +190,7 @@ async function runCycle() {
 
         let totalBalance = 0n;
         for (const a of adapters) totalBalance += a.balance;
-        const currentTvl = Number(totalBalance) * (prices.usdcUsd || 1.0) / 1e6;
+        const currentTvl = Number(totalBalance) * (prices.usdcUsd || 1.0) / 1e18;
 
         // Determine which protocol is targeted (for BFT primary focus)
         let targetedProtocol = "AaveAdapter";

@@ -27,7 +27,7 @@ import {
     type Address,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { arbitrumSepolia, baseSepolia } from "viem/chains";
+import { arbitrumSepolia } from "viem/chains";
 
 import { RiskRegistry, ShieldVault } from "../../contracts/abi";
 import { readAllAdaptersSim, createSimPublicClient } from "./sim-reader";
@@ -40,10 +40,10 @@ const CONFIG_PATH = path.join(__dirname, "..", "config.staging.json");
 const config = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf-8"));
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY ?? process.env.CRE_ETH_PRIVATE_KEY;
-const RPC_URL = process.env.RPC_URL || "https://sepolia.base.org";
+const RPC_URL = process.env.RPC_URL || "https://sepolia-rollup.arbitrum.io/rpc";
 
-const baseEvm = config.evms.find((e: any) => e.chainName === "ethereum-testnet-sepolia-base-1");
-const addresses = baseEvm?.addresses[0] || {};
+const arbEvm = config.evms.find((e: any) => e.chainName === "ethereum-testnet-sepolia-arbitrum-1");
+const addresses = arbEvm?.addresses[0] || {};
 
 if (!PRIVATE_KEY) {
     console.error("ERROR: Set CRE_ETH_PRIVATE_KEY=0x...");
@@ -55,9 +55,9 @@ if (!PRIVATE_KEY) {
 // ─────────────────────────────────────────────────
 
 const account = privateKeyToAccount(PRIVATE_KEY as `0x${string}`);
-const walletClient = createWalletClient({ account, chain: baseSepolia, transport: http(RPC_URL) });
-const publicClient = createPublicClient({ chain: baseSepolia, transport: http(RPC_URL) });
-const simClient = createSimPublicClient(RPC_URL, baseSepolia);
+const walletClient = createWalletClient({ account, chain: arbitrumSepolia, transport: http(RPC_URL) });
+const publicClient = createPublicClient({ chain: arbitrumSepolia, transport: http(RPC_URL) });
+const simClient = createSimPublicClient(RPC_URL, arbitrumSepolia);
 
 // ─────────────────────────────────────────────────
 // CONSTANTS
@@ -238,7 +238,7 @@ async function main() {
     const adapters = await readAllRiskInfo();
 
     const totalBalance = adapters.reduce((s, a) => s + a.balance, 0);
-    console.log(`${C.green}  ✓ TVL: $${(totalBalance / 1e6).toFixed(4)}${C.r}`);
+    console.log(`${C.green}  ✓ TVL: $${(totalBalance / 1e18).toFixed(4)}${C.r}`);
     console.log(`${C.green}  ✓ Adapters: ${adapters.length}${C.r}\n`);
 
     // 2. Display current state
@@ -255,7 +255,7 @@ async function main() {
             ` ${col}${String(a.riskScore).padEnd(8)}${C.r}` +
             ` ${col}${a.threatLabel.padEnd(12)}${C.r}` +
             ` ${(a.apy / 100).toFixed(2).padStart(5)}%`.padEnd(10) +
-            ` $${(a.balance / 1e6).toFixed(6)}`
+            ` $${(a.balance / 1e18).toFixed(6)}`
         );
     }
     console.log(`${C.dim}${"─".repeat(60)}${C.r}\n`);
@@ -298,7 +298,7 @@ async function main() {
     if (actionItems.length === 0) {
         console.log(`  ${C.green}No rebalancing actions required — portfolio is optimal.${C.r}`);
     } else {
-        console.log(`\n  ${C.cyan}Executing ShieldVault.rebalance() on Base Sepolia...${C.r}`);
+        console.log(`\n  ${C.cyan}Executing ShieldVault.rebalance() on Arbitrum Sepolia...${C.r}`);
         for (const p of actionItems) {
             const col = p.action === "EXIT" ? C.red : p.action === "REDUCE" ? C.yellow : C.green;
             console.log(`  ${col}  → ${p.name}: ${p.action} — ${p.actionDetail}${C.r}`);
@@ -306,17 +306,30 @@ async function main() {
 
         // Update pool weights in vault to match optimal allocation, then rebalance
         try {
-            const nonce = await publicClient.getTransactionCount({ address: account.address, blockTag: "pending" });
+            let currentNonce = await publicClient.getTransactionCount({ address: account.address, blockTag: "pending" });
+            
+            console.log(`  ${C.dim}Updating on-chain pool weights...${C.r}`);
+            for (const p of plan) {
+                const updateHash = await walletClient.writeContract({
+                    address: vaultAddr,
+                    abi: ShieldVault,
+                    functionName: "updatePoolWeight",
+                    args: [p.address, BigInt(Math.round(p.targetWeightBp))],
+                    nonce: currentNonce++,
+                });
+                await publicClient.waitForTransactionReceipt({ hash: updateHash });
+            }
+
             const rebalanceHash = await walletClient.writeContract({
                 address: vaultAddr,
                 abi: ShieldVault,
                 functionName: "rebalance",
                 args: [],
-                nonce,
+                nonce: currentNonce++,
             });
             await publicClient.waitForTransactionReceipt({ hash: rebalanceHash });
             console.log(`  ${C.green}✅ ShieldVault.rebalance() confirmed: ${rebalanceHash}${C.r}`);
-            console.log(`  ${C.green}🔎 https://sepolia.basescan.org/tx/${rebalanceHash}${C.r}`);
+            console.log(`  ${C.green}🔎 https://sepolia.arbiscan.io/tx/${rebalanceHash}${C.r}`);
         } catch (err: any) {
             console.error(`  ${C.yellow}rebalance() failed: ${err?.shortMessage || err?.message}${C.r}`);
         }
@@ -348,7 +361,7 @@ async function main() {
                 });
                 await publicClient.waitForTransactionReceipt({ hash: logHash });
                 console.log(`  ${C.green}Shield action logged on-chain: ${logHash}${C.r}`);
-                console.log(`  ${C.green}🔎 https://sepolia.basescan.org/tx/${logHash}${C.r}`);
+                console.log(`  ${C.green}🔎 https://sepolia.arbiscan.io/tx/${logHash}${C.r}`);
             } catch (err: any) {
                 console.error(`  ${C.yellow}logShieldAction failed: ${err?.shortMessage || err?.message}${C.r}`);
             }

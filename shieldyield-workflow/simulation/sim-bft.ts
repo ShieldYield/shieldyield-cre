@@ -85,7 +85,7 @@ async function main() {
         totalBalance += a.balance;
     }
     const usdcPrice = prices.usdcUsd || 1.0;
-    const currentTvl = Number(totalBalance) * usdcPrice / 1e6;
+    const currentTvl = Number(totalBalance) * usdcPrice / 1e18;
 
     console.log(`${C.green}✓ On-chain data fetched (TVL: $${currentTvl.toFixed(2)})${C.r}`);
 

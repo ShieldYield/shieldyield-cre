@@ -207,7 +207,7 @@ export function executeCriticalBridgeProtocol(
         {
             name: "emergencyBridge",
             type: "function",
-            stateMutability: "payable",
+            stateMutability: "nonpayable",
             inputs: [
                 { name: "token", type: "address" },
                 { name: "amount", type: "uint256" },

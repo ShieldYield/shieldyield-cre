@@ -252,7 +252,7 @@ export const onCronTrigger = (runtime: Runtime<Config>): string => {
         totalBalance += a.balance;
         totalPrincipal += a.principal;
     }
-    const currentTvl = Number(totalBalance) * usdcPrice / 1e6;
+    const currentTvl = Number(totalBalance) * usdcPrice / 1e18;
 
     const fallbackChangePercent = totalPrincipal > 0n
         ? ((Number(totalBalance) - Number(totalPrincipal)) / Number(totalPrincipal)) * 100
