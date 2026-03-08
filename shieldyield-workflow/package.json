@@ -20,7 +20,8 @@
     "sim:inject-critical": "bun simulation/sim-inject-critical.ts",
     "sim:bft": "bun simulation/sim-bft.ts",
     "sim:workflow3": "bun simulation/sim-workflow3.ts",
-    "sim:workflow4": "bun simulation/sim-workflow4.ts"
+    "sim:workflow4": "bun simulation/sim-workflow4.ts",
+    "sim:finalize:base": "bun simulation/sim-finalize-base.ts"
   },
   "license": "UNLICENSED",
   "dependencies": {
