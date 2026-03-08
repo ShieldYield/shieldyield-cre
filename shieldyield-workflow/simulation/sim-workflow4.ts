@@ -55,7 +55,25 @@ const ShieldBridgeABI = [
 const CONFIG_PATH = path.join(__dirname, "..", "config.staging.json");
 const config = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf-8"));
 
-const PRIVATE_KEY = process.env.PRIVATE_KEY ?? process.env.CRE_ETH_PRIVATE_KEY;
+// ─────────────────────────────────────────────────
+// Auto-load ../.env if variables aren't already set
+// ─────────────────────────────────────────────────
+const ENV_PATH = path.join(__dirname, "../../.env");
+if (fs.existsSync(ENV_PATH)) {
+    const envFile = fs.readFileSync(ENV_PATH, "utf-8");
+    envFile.split("\n").forEach(line => {
+        const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+        if (match && !process.env[match[1]]) {
+            process.env[match[1]] = match[2]?.trim() || "";
+        }
+    });
+}
+
+let PRIVATE_KEY = process.env.PRIVATE_KEY ?? process.env.CRE_ETH_PRIVATE_KEY;
+if (PRIVATE_KEY && !PRIVATE_KEY.startsWith("0x")) {
+    PRIVATE_KEY = `0x${PRIVATE_KEY}`; // Ensure 0x prefix for viability with viem
+}
+
 const RPC_URL = process.env.RPC_URL || "https://sepolia-rollup.arbitrum.io/rpc";
 
 const arbEvm = config.evms.find((e: any) => e.chainName === "ethereum-testnet-sepolia-arbitrum-1");
@@ -96,13 +114,13 @@ const THREAT_LABEL = ["SAFE", "WATCH", "WARNING", "CRITICAL"];
 // ─────────────────────────────────────────────────
 
 interface ThreatAdapter {
-    name:        string;
-    address:     Address;
-    riskScore:   number;
+    name: string;
+    address: Address;
+    riskScore: number;
     threatLevel: number;
     threatLabel: string;
-    balance:     bigint; // raw 6-decimal USDC
-    apy:         bigint;
+    balance: bigint; // raw 6-decimal USDC
+    apy: bigint;
 }
 
 async function readThreatState(): Promise<ThreatAdapter[]> {
@@ -121,23 +139,23 @@ async function readThreatState(): Promise<ThreatAdapter[]> {
             }) as { riskScore: number; threatLevel: number };
 
             results.push({
-                name:        snap.name,
-                address:     snap.address as Address,
-                riskScore:   Number(risk.riskScore),
+                name: snap.name,
+                address: snap.address as Address,
+                riskScore: Number(risk.riskScore),
                 threatLevel: Number(risk.threatLevel),
                 threatLabel: THREAT_LABEL[Number(risk.threatLevel)] ?? "SAFE",
-                balance:     snap.balance,
-                apy:         snap.apy,
+                balance: snap.balance,
+                apy: snap.apy,
             });
         } catch {
             results.push({
-                name:        snap.name,
-                address:     snap.address as Address,
-                riskScore:   0,
+                name: snap.name,
+                address: snap.address as Address,
+                riskScore: 0,
                 threatLevel: 0,
                 threatLabel: "SAFE",
-                balance:     snap.balance,
-                apy:         snap.apy,
+                balance: snap.balance,
+                apy: snap.apy,
             });
         }
     }
@@ -151,7 +169,7 @@ async function readThreatState(): Promise<ThreatAdapter[]> {
 
 async function executeShield(adapter: ThreatAdapter, vaultAddr: Address, registryAddr: Address): Promise<void> {
     const isCritical = adapter.threatLevel >= 3;
-    const isWarning  = adapter.threatLevel === 2;
+    const isWarning = adapter.threatLevel === 2;
 
     const actionLabel = isCritical ? "EMERGENCY WITHDRAWAL" : "PARTIAL WITHDRAWAL (30%)";
     const actionColor = isCritical ? C.red : C.yellow;
@@ -182,10 +200,10 @@ async function executeShield(adapter: ThreatAdapter, vaultAddr: Address, registr
             if (addresses.shieldBridge && addresses.mockUSDC) {
                 console.log(`\n  ${C.magenta}${C.bold}CROSS-CHAIN ESCAPE (CCIP) — REAL VAULT BRIDGE${C.r}`);
                 console.log(`  ${C.dim}ShieldVault.bridgeToSafeChain() → withdraws from Aave → sends to ShieldBridge → CCIP to Base${C.r}`);
-                
+
                 try {
                     const bridgeNonce = await publicClient.getTransactionCount({ address: account.address, blockTag: "pending" });
-                    
+
                     // Call ShieldVault.bridgeToSafeChain(amount, destinationChainSelector)
                     // The Vault will:
                     // 1. Withdraw from safe haven (Aave) 
@@ -207,12 +225,13 @@ async function executeShield(adapter: ThreatAdapter, vaultAddr: Address, registr
                         args: [adapter.balance, BASE_SEPOLIA_SELECTOR],
                         nonce: bridgeNonce,
                     });
-                    
+
                     console.log(`  ${C.magenta}Bridge TX: ${bridgeHash}${C.r}`);
                     const bridgeReceipt = await publicClient.waitForTransactionReceipt({ hash: bridgeHash });
                     console.log(`  ${C.magenta}${C.bold}✅ Vault bridge confirmed in block ${bridgeReceipt.blockNumber}${C.r}`);
                     console.log(`  ${C.dim}   Funds evacuated from Aave (Arbitrum) → CCIP → Base Sepolia${C.r}`);
-                    console.log(`  ${C.dim}🔎 https://sepolia.arbiscan.io/tx/${bridgeHash}${C.r}`);
+                    console.log(`  ${C.dim}🔎 Arbiscan:     https://sepolia.arbiscan.io/tx/${bridgeHash}${C.r}`);
+                    console.log(`  ${C.cyan}🔎 CCIP Explorer: https://ccip.chain.link/tx/${bridgeHash}${C.r}`);
                 } catch (bridgeErr: any) {
                     console.log(`  ${C.yellow}⚠️  bridgeToSafeChain reverted: ${bridgeErr?.shortMessage || bridgeErr?.message || String(bridgeErr)}${C.r}`);
                     console.log(`  ${C.dim}   This may mean safe haven (Aave) has insufficient balance or ShieldBridge lacks ETH for CCIP fees.${C.r}`);
@@ -237,7 +256,7 @@ async function executeShield(adapter: ThreatAdapter, vaultAddr: Address, registr
                 await publicClient.waitForTransactionReceipt({ hash: logHash });
                 console.log(`  ${C.red}Shield action logged on-chain: ${logHash}${C.r}`);
             } catch (logErr) {
-               console.log(`  ${C.yellow}⚠️  logShieldAction reverted: RiskRegistry only allows ShieldVault. (Cosmetic error)${C.r}`);
+                console.log(`  ${C.yellow}⚠️  logShieldAction reverted: RiskRegistry only allows ShieldVault. (Cosmetic error)${C.r}`);
             }
             console.log(`  ${C.red}${C.bold}  Amount saved + bridged: $${(Number(adapter.balance) / 1e18).toFixed(6)} USDC${C.r}`);
 
@@ -308,7 +327,7 @@ async function main() {
     console.log(`${C.dim}  Automated threat response · WARNING/CRITICAL positions${C.r}`);
     console.log(`${C.red}${"═".repeat(60)}${C.r}\n`);
 
-    const vaultAddr    = addresses.shieldVault  as Address;
+    const vaultAddr = addresses.shieldVault as Address;
     const registryAddr = addresses.riskRegistry as Address;
 
     // 1. Read current threat state
@@ -321,7 +340,7 @@ async function main() {
     for (const a of adapters) {
         const col = a.threatLevel >= 3 ? C.red
             : a.threatLevel === 2 ? C.yellow
-            : C.dim;
+                : C.dim;
         const marker = a.threatLevel >= 2 ? "!" : " ";
         console.log(
             `${marker} ${C.bold}${a.name.padEnd(18)}${C.r}` +
@@ -353,8 +372,8 @@ async function main() {
 
         // Post-action summary
         const criticalCount = sorted.filter(a => a.threatLevel >= 3).length;
-        const warningCount  = sorted.filter(a => a.threatLevel === 2).length;
-        const totalSaved    = sorted.reduce((s, a) => {
+        const warningCount = sorted.filter(a => a.threatLevel === 2).length;
+        const totalSaved = sorted.reduce((s, a) => {
             const withdrawn = a.threatLevel >= 3 ? a.balance : (a.balance * WARNING_WITHDRAW_PCT) / 100n;
             return s + Number(withdrawn);
         }, 0);

@@ -39,7 +39,25 @@ import { readAllAdaptersSim, createSimPublicClient } from "./sim-reader";
 const CONFIG_PATH = path.join(__dirname, "..", "config.staging.json");
 const config = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf-8"));
 
-const PRIVATE_KEY = process.env.PRIVATE_KEY ?? process.env.CRE_ETH_PRIVATE_KEY;
+// ─────────────────────────────────────────────────
+// Auto-load ../.env if variables aren't already set
+// ─────────────────────────────────────────────────
+const ENV_PATH = path.join(__dirname, "../../.env");
+if (fs.existsSync(ENV_PATH)) {
+    const envFile = fs.readFileSync(ENV_PATH, "utf-8");
+    envFile.split("\n").forEach(line => {
+        const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+        if (match && !process.env[match[1]]) {
+            process.env[match[1]] = match[2]?.trim() || "";
+        }
+    });
+}
+
+let PRIVATE_KEY = process.env.PRIVATE_KEY ?? process.env.CRE_ETH_PRIVATE_KEY;
+if (PRIVATE_KEY && !PRIVATE_KEY.startsWith("0x")) {
+    PRIVATE_KEY = `0x${PRIVATE_KEY}`; // Ensure 0x prefix for viability with viem
+}
+
 const RPC_URL = process.env.RPC_URL || "https://sepolia-rollup.arbitrum.io/rpc";
 
 const arbEvm = config.evms.find((e: any) => e.chainName === "ethereum-testnet-sepolia-arbitrum-1");
@@ -70,9 +88,9 @@ const C = {
 };
 
 const ADAPTER_ADDRESSES: Record<string, Address> = {
-    AaveAdapter:     addresses.aaveAdapter     as Address,
+    AaveAdapter: addresses.aaveAdapter as Address,
     CompoundAdapter: addresses.compoundAdapter as Address,
-    MorphoAdapter:   addresses.morphoAdapter   as Address,
+    MorphoAdapter: addresses.morphoAdapter as Address,
     YieldMaxAdapter: addresses.yieldMaxAdapter as Address,
 };
 
@@ -82,9 +100,9 @@ const THREAT_COLOR = [C.green, C.yellow, C.yellow, C.red];
 
 // Rebalancer target weights per threat level (basis points, 10000 = 100%)
 const TARGET_WEIGHT_BP: Record<string, number> = {
-    SAFE:     0,    // distributed proportionally to APY
-    WATCH:    1500, // max 15%
-    WARNING:  1000, // max 10%
+    SAFE: 0,    // distributed proportionally to APY
+    WATCH: 1500, // max 15%
+    WARNING: 1000, // max 10%
     CRITICAL: 0,    // exit
 };
 
@@ -119,23 +137,23 @@ async function readAllRiskInfo(): Promise<RiskInfo[]> {
             }) as { riskScore: number; threatLevel: number; lastUpdated: bigint; isActive: boolean };
 
             results.push({
-                name:        snap.name,
-                address:     snap.address as Address,
-                riskScore:   Number(risk.riskScore),
+                name: snap.name,
+                address: snap.address as Address,
+                riskScore: Number(risk.riskScore),
                 threatLevel: Number(risk.threatLevel),
                 threatLabel: THREAT_LABEL[Number(risk.threatLevel)] ?? "SAFE",
-                apy:         Number(snap.apy),
-                balance:     Number(snap.balance),
+                apy: Number(snap.apy),
+                balance: Number(snap.balance),
             });
         } catch {
             results.push({
-                name:        snap.name,
-                address:     snap.address as Address,
-                riskScore:   0,
+                name: snap.name,
+                address: snap.address as Address,
+                riskScore: 0,
                 threatLevel: 0,
                 threatLabel: "SAFE",
-                apy:         Number(snap.apy),
-                balance:     Number(snap.balance),
+                apy: Number(snap.apy),
+                balance: Number(snap.balance),
             });
         }
     }
@@ -272,8 +290,8 @@ async function main() {
     for (const p of plan) {
         const actionColor = p.action === "EXIT" ? C.red
             : p.action === "REDUCE" ? C.yellow
-            : p.action === "INCREASE" ? C.green
-            : C.dim;
+                : p.action === "INCREASE" ? C.green
+                    : C.dim;
         const marker = p.action !== "HOLD" ? "*" : " ";
         if (p.action !== "HOLD") hasChanges = true;
         console.log(
@@ -290,7 +308,7 @@ async function main() {
 
     // 4. Execute on-chain rebalance via ShieldVault.rebalance()
     console.log(`${C.dim}[4/4] Broadcasting on-chain rebalance...${C.r}`);
-    const vaultAddr    = addresses.shieldVault  as Address;
+    const vaultAddr = addresses.shieldVault as Address;
     const registryAddr = addresses.riskRegistry as Address;
 
     const actionItems = plan.filter(x => x.action !== "HOLD");
@@ -307,7 +325,7 @@ async function main() {
         // Update pool weights in vault to match optimal allocation, then rebalance
         try {
             let currentNonce = await publicClient.getTransactionCount({ address: account.address, blockTag: "pending" });
-            
+
             console.log(`  ${C.dim}Updating on-chain pool weights...${C.r}`);
             for (const p of plan) {
                 const updateHash = await walletClient.writeContract({
@@ -336,12 +354,12 @@ async function main() {
 
         // Log highest-severity action to RiskRegistry
         const criticals = plan.filter(p => p.action === "EXIT");
-        const warnings  = plan.filter(p => p.action === "REDUCE" && p.threatLabel === "WARNING");
-        const targets   = [...criticals, ...warnings];
+        const warnings = plan.filter(p => p.action === "REDUCE" && p.threatLabel === "WARNING");
+        const targets = [...criticals, ...warnings];
 
         if (targets.length > 0) {
             const highestThreat = criticals.length > 0 ? 3 : 2;
-            const totalSaved    = targets.reduce((s, p) => s + p.currentBalance, 0);
+            const totalSaved = targets.reduce((s, p) => s + p.currentBalance, 0);
 
             console.log(`\n  ${C.dim}Logging shield action to RiskRegistry...${C.r}`);
             try {

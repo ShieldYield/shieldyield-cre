@@ -17,13 +17,13 @@
       "addresses": [
         {
           "mockUSDC": "0xA8C0c11bf64AF62CDCA6f93D3769B88BdD7cb93D",
-          "riskRegistry": "0xB66fC87e8e46acF6478f6924Ea8D87331E638BdD",
-          "shieldVault": "0xFb81acFdCF900008E992ca49b57accDBaef3De95",
-          "shieldBridge": "0xCB24bbdC0F6f32f4555A4FdA1542A8BB0F5221C0",
-          "aaveAdapter": "0xE47044dAc29e8443e63aE1b34cDB647F2cE8A230",
-          "compoundAdapter": "0x2A4dC8c6A0E45B0e6824D723250f943bCAd85625",
-          "morphoAdapter": "0x43567d080dc2503A1E46446898e14f22d1FB576c",
-          "yieldMaxAdapter": "0x2F3dAA21af1C1D035789BA157802C02fa54294af",
+          "riskRegistry": "0xD5Ebe945197198cAE3846444f2c158981C7450F2",
+          "shieldVault": "0xE2b7f9E85ee0390B2c3bC874301CAeB941Fc88eB",
+          "shieldBridge": "0xa66A087dFb94a198c793B65E66C412F063C15476",
+          "aaveAdapter": "0xC085b5604561DeE55c15a002fFc8782450429635",
+          "compoundAdapter": "0xD7069532cD6c4Bca265aA12db46c68c56e596649",
+          "morphoAdapter": "0x35cCD4Bf836ca9482Ad7DB9f66d68Dca77F03857",
+          "yieldMaxAdapter": "0xF481704d78A155B31083ecF580D678790FA3A1a4",
           "workflowLogger": "0xc874515881928b0ef35164843542f91d9ccfd2f3"
         }
       ]
@@ -38,13 +38,13 @@
       "addresses": [
         {
           "mockUSDC": "0x88A2d74F47a237a62e7A51cdDa67270CE381555e",
-          "riskRegistry": "0x857fa4B1D4eD1b4E26aB2704Bd2D3C381CAfeD13",
-          "shieldVault": "0x220b8e0733e0E1eD90a44d9Bd81D558D685c0fE0",
-          "shieldBridge": "0x4B8381d50A8D609A43060Fc19692289870afC80f",
-          "aaveAdapter": "0xc8c06751384601300AfA12BeE12888f6dAf4A167",
-          "compoundAdapter": "0xc66627589c2d1Eeee420c1C2F4918747f5906106",
-          "morphoAdapter": "0x35E683F8bc9Bf0ff63256F65bAb0dD62604ED85D",
-          "yieldMaxAdapter": "0xf7Bf7ddC5d261b60C25a291134FA1312912A599E"
+          "riskRegistry": "0x8464eF4aeae6289ab5BddFEcE4Cc3CF50cC2b290",
+          "shieldVault": "0x2EDEe329359aC421059B09C4049A750CD71831E1",
+          "shieldBridge": "0x87Ed95Ef9fB41BeA722f4575f54b4c24EB38F679",
+          "aaveAdapter": "0xd1C409AeE097ba8d1590e40a6c8fF4908819BD35",
+          "compoundAdapter": "0xeCD4101D1E7914F72c0fd9fbD00ad9FFb3093A8B",
+          "morphoAdapter": "0xE7f4b7eE9308733C7c078697999ab50812ab5F73",
+          "yieldMaxAdapter": "0x383A628338e299bB98d616aF3258788b1898EA80"
         }
       ]
     }

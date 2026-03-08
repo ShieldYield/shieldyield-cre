@@ -326,8 +326,13 @@ async function main() {
     // Sequential loop — each cycle waits for the previous to fully complete
     while (true) {
         await runCycle();
-        log("DAEMON", `Sleeping ${CRON_MS / 1000}s...`, C.dim);
-        await Bun.sleep(CRON_MS);
+        const seconds = CRON_MS / 1000;
+
+        for (let i = seconds; i > 0; i--) {
+            process.stdout.write(`\r${C.dim}[DAEMON] Next BFT Simulation starting in ${i}s...${C.r} `);
+            await Bun.sleep(1000);
+        }
+        process.stdout.write("\n"); // Move to new line before the next cycle's logs
     }
 }
 
