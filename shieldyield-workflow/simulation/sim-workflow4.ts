@@ -179,21 +179,44 @@ async function executeShield(adapter: ThreatAdapter, vaultAddr: Address, registr
             console.log(`  ${C.red}${C.bold}✅ Emergency withdrawal confirmed in block ${receipt.blockNumber}${C.r}`);
             console.log(`  ${C.dim}🔎 https://sepolia.arbiscan.io/tx/${hash}${C.r}`);
 
-            // NEW: Cross-Chain CCIP Bridge
             if (addresses.shieldBridge && addresses.mockUSDC) {
-                console.log(`\n  ${C.magenta}${C.bold}CROSS-CHAIN ESCAPE (CCIP)${C.r}`);
-                console.log(`  ${C.dim}Initiating CCIP bridge to Base Sepolia...${C.r}`);
-                const nonceBridge = await publicClient.getTransactionCount({ address: account.address, blockTag: "pending" });
-                const bridgeHash = await walletClient.writeContract({
-                    address: addresses.shieldBridge as Address,
-                    abi: ShieldBridgeABI,
-                    functionName: "emergencyBridge",
-                    args: [addresses.mockUSDC as Address, 0n, BASE_SEPOLIA_SELECTOR],
-                    nonce: nonceBridge,
-                });
-                console.log(`  ${C.magenta}CCIP Bridge TX: ${bridgeHash}${C.r}`);
-                await publicClient.waitForTransactionReceipt({ hash: bridgeHash });
-                console.log(`  ${C.magenta}${C.bold}✅ Funds bridging to Base Sepolia via CCIP${C.r}`);
+                console.log(`\n  ${C.magenta}${C.bold}CROSS-CHAIN ESCAPE (CCIP) — REAL VAULT BRIDGE${C.r}`);
+                console.log(`  ${C.dim}ShieldVault.bridgeToSafeChain() → withdraws from Aave → sends to ShieldBridge → CCIP to Base${C.r}`);
+                
+                try {
+                    const bridgeNonce = await publicClient.getTransactionCount({ address: account.address, blockTag: "pending" });
+                    
+                    // Call ShieldVault.bridgeToSafeChain(amount, destinationChainSelector)
+                    // The Vault will:
+                    // 1. Withdraw from safe haven (Aave) 
+                    // 2. Approve ShieldBridge
+                    // 3. Call ShieldBridge.emergencyBridge → CCIP to Base Sepolia
+                    const bridgeHash = await walletClient.writeContract({
+                        address: vaultAddr,
+                        abi: [{
+                            name: "bridgeToSafeChain",
+                            type: "function",
+                            stateMutability: "nonpayable",
+                            inputs: [
+                                { name: "amount", type: "uint256" },
+                                { name: "destinationChainSelector", type: "uint64" },
+                            ],
+                            outputs: [],
+                        }],
+                        functionName: "bridgeToSafeChain",
+                        args: [adapter.balance, BASE_SEPOLIA_SELECTOR],
+                        nonce: bridgeNonce,
+                    });
+                    
+                    console.log(`  ${C.magenta}Bridge TX: ${bridgeHash}${C.r}`);
+                    const bridgeReceipt = await publicClient.waitForTransactionReceipt({ hash: bridgeHash });
+                    console.log(`  ${C.magenta}${C.bold}✅ Vault bridge confirmed in block ${bridgeReceipt.blockNumber}${C.r}`);
+                    console.log(`  ${C.dim}   Funds evacuated from Aave (Arbitrum) → CCIP → Base Sepolia${C.r}`);
+                    console.log(`  ${C.dim}🔎 https://sepolia.arbiscan.io/tx/${bridgeHash}${C.r}`);
+                } catch (bridgeErr: any) {
+                    console.log(`  ${C.yellow}⚠️  bridgeToSafeChain reverted: ${bridgeErr?.shortMessage || bridgeErr?.message || String(bridgeErr)}${C.r}`);
+                    console.log(`  ${C.dim}   This may mean safe haven (Aave) has insufficient balance or ShieldBridge lacks ETH for CCIP fees.${C.r}`);
+                }
             }
 
             try {

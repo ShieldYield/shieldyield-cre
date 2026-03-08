@@ -17,13 +17,13 @@
       "addresses": [
         {
           "mockUSDC": "0xA8C0c11bf64AF62CDCA6f93D3769B88BdD7cb93D",
-          "riskRegistry": "0x28B38104F3cD62EABE17E927d61DbC50B834b1B7",
-          "shieldVault": "0xe6D20be65eA58e30eFCb8DBe677772959aAdFCd9",
-          "shieldBridge": "0xC18B973B1F0EaAc75ae9035439d691515da06d0e",
-          "aaveAdapter": "0x8BdCad76328f00AB9A0712E8292fc1a1aDCaa82a",
-          "compoundAdapter": "0xF2F0fa5fC187cFE6538d72C86ccCADa996956aAA",
-          "morphoAdapter": "0x3f5b509a1d59814567fe370a471463c3AEa38400",
-          "yieldMaxAdapter": "0xaFD04A3A43a8B8d4523e3F1031071D1D378D8096",
+          "riskRegistry": "0xB66fC87e8e46acF6478f6924Ea8D87331E638BdD",
+          "shieldVault": "0xFb81acFdCF900008E992ca49b57accDBaef3De95",
+          "shieldBridge": "0xCB24bbdC0F6f32f4555A4FdA1542A8BB0F5221C0",
+          "aaveAdapter": "0xE47044dAc29e8443e63aE1b34cDB647F2cE8A230",
+          "compoundAdapter": "0x2A4dC8c6A0E45B0e6824D723250f943bCAd85625",
+          "morphoAdapter": "0x43567d080dc2503A1E46446898e14f22d1FB576c",
+          "yieldMaxAdapter": "0x2F3dAA21af1C1D035789BA157802C02fa54294af",
           "workflowLogger": "0xc874515881928b0ef35164843542f91d9ccfd2f3"
         }
       ]
