@@ -35,7 +35,25 @@ import { runBftRound, type BftConfig } from "./bft/bft-runner";
 const CONFIG_PATH = path.join(__dirname, "..", "config.staging.json");
 const config = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf-8"));
 
-const PRIVATE_KEY = process.env.PRIVATE_KEY ?? process.env.CRE_ETH_PRIVATE_KEY;
+// ─────────────────────────────────────────────────
+// Auto-load ../.env if variables aren't already set
+// ─────────────────────────────────────────────────
+const ENV_PATH = path.join(__dirname, "../../.env");
+if (fs.existsSync(ENV_PATH)) {
+    const envFile = fs.readFileSync(ENV_PATH, "utf-8");
+    envFile.split("\n").forEach(line => {
+        const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+        if (match && !process.env[match[1]]) {
+            process.env[match[1]] = match[2]?.trim() || "";
+        }
+    });
+}
+
+let PRIVATE_KEY = process.env.PRIVATE_KEY ?? process.env.CRE_ETH_PRIVATE_KEY;
+if (PRIVATE_KEY && !PRIVATE_KEY.startsWith("0x")) {
+    PRIVATE_KEY = `0x${PRIVATE_KEY}`; // Ensure 0x prefix for viability with viem
+}
+
 const RPC_URL = process.env.RPC_URL || "https://sepolia-rollup.arbitrum.io/rpc";
 const CRON_MS = 30_000;
 
@@ -251,7 +269,7 @@ async function runCycle() {
     // BFT computes natural scores; inject demo scenario forces the targeted
     // adapter to its defined severity level so the on-chain state reflects the demo.
     const INJECT_OVERRIDES: Record<string, { name: string; score: number; reason: string }> = {
-        warning:  { name: "MorphoAdapter",   score: 65, reason: "INJECTED: AI Detected Suspicious GitHub Activity on Morpho (WARNING)" },
+        warning: { name: "MorphoAdapter", score: 65, reason: "INJECTED: AI Detected Suspicious GitHub Activity on Morpho (WARNING)" },
         critical: { name: "YieldMaxAdapter", score: 85, reason: "INJECTED: Massive TVL Outflow on YieldMax - Bank Run (CRITICAL)" },
     };
     try {
