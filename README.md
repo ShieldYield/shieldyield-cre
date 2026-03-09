@@ -46,6 +46,14 @@ Located in `shieldyield-workflow/simulation/`, these scripts allow for end-to-en
 - **`sim-finalize-base.ts`** ✅: Oracle instruction to finalize cross-chain claims on the destination chain (Base).
 - **`sim-fetcher.ts`** 📡: Mocks the ingestion of external DeFi metrics (TVL, APY).
 
+## 🔌 Frontend Proxy & Simulation Sync
+
+The CRE simulation environment is designed to be fully integrated with the ShieldYield Dashboard:
+
+- **Mock Variance Server (Port 3099)**: The `sim-daemon` starts a server that hosts the current injected scenario state.
+- **Frontend Proxy**: The Next.js API routes (e.g., `/api/ai-sentinel`) act as a proxy that polls the CRE's Mock Server.
+- **Synchronization**: This ensures that when you run `sim-inject.ts`, the frontend immediately reflects the exact same AI threat scores and reasoning being "seen" by the CRE workflows.
+
 ## 🚀 Setup & Run
 
 ### Install Dependencies
