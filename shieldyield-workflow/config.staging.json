@@ -38,13 +38,13 @@
       "addresses": [
         {
           "mockUSDC": "0x88A2d74F47a237a62e7A51cdDa67270CE381555e",
-          "riskRegistry": "0x8464eF4aeae6289ab5BddFEcE4Cc3CF50cC2b290",
-          "shieldVault": "0x2EDEe329359aC421059B09C4049A750CD71831E1",
-          "shieldBridge": "0x87Ed95Ef9fB41BeA722f4575f54b4c24EB38F679",
-          "aaveAdapter": "0xd1C409AeE097ba8d1590e40a6c8fF4908819BD35",
-          "compoundAdapter": "0xeCD4101D1E7914F72c0fd9fbD00ad9FFb3093A8B",
-          "morphoAdapter": "0xE7f4b7eE9308733C7c078697999ab50812ab5F73",
-          "yieldMaxAdapter": "0x383A628338e299bB98d616aF3258788b1898EA80"
+          "riskRegistry": "0x0d49de22cbcd0402ff0785c7e84a57e98e4f33f2",
+          "shieldVault": "0xf723cf2629a7461ad92c7ef6cad51cd853d332a7",
+          "shieldBridge": "0x83995931a5be0cc67811ed1d4714f4eee213ee8d",
+          "aaveAdapter": "0xb62ea26b218166bfd1808e76bef5222d7e4c5acd",
+          "compoundAdapter": "0xaa862cdde53dcd2878dc49b1c0618ea23eecdf1b",
+          "morphoAdapter": "0x184b015698fb9cd5f5c9cae1cdbce0d7e0e5ee46",
+          "yieldMaxAdapter": "0x28b38104f3cd62eabe17e927d61dbc50b834b1b7"
         }
       ]
     }
